@@ -25,7 +25,16 @@ flex_register_toolchains()
 ```
 """
 
-load("@io_bazel_rules_m4//:m4.bzl", "M4_TOOLCHAIN")
+load(
+    "@io_bazel_rules_m4//m4:toolchain.bzl",
+    _M4_TOOLCHAIN = "M4_TOOLCHAIN",
+    _m4_context = "m4_context",
+)
+load(
+    "//flex:toolchain.bzl",
+    _FLEX_TOOLCHAIN = "FLEX_TOOLCHAIN",
+    _flex_context = "flex_context",
+)
 
 _LATEST = "2.6.4"
 
@@ -36,97 +45,120 @@ _VERSION_URLS = {
     },
 }
 
-FLEX_TOOLCHAIN = "@io_bazel_rules_flex//flex:toolchain_type"
-
 FLEX_VERSIONS = list(_VERSION_URLS)
 
-def _flex_lexer(ctx):
-    m4 = ctx.toolchains[M4_TOOLCHAIN].m4
-    flex = ctx.toolchains[FLEX_TOOLCHAIN].flex
+_SRC_EXT = {
+    "c": "c",
+    "c++": "cc",
+}
 
-    out_src_ext = {
-        "l": "c",
-        "ll": "cc",
-        "l++": "c++",
-        "lxx": "cxx",
-        "lpp": "cpp",
-    }[ctx.file.src.extension]
-    out_hdr_ext = {
-        "l": "h",
-        "ll": "hh",
-        "l++": "h++",
-        "lxx": "hxx",
-        "lpp": "hpp",
-    }[ctx.file.src.extension]
+_HDR_EXT = {
+    "c": "h",
+    "c++": "hh",
+}
+
+def _flex_lexer_impl(ctx):
+    m4 = _m4_context(ctx)
+    flex = _flex_context(ctx)
+
+    out_src_ext = _SRC_EXT[ctx.attr.language]
+    out_hdr_ext = _HDR_EXT[ctx.attr.language]
 
     out_src = ctx.actions.declare_file("{}.{}".format(ctx.attr.name, out_src_ext))
     out_hdr = ctx.actions.declare_file("{}.{}".format(ctx.attr.name, out_hdr_ext))
 
+    inputs = m4.inputs + flex.inputs + ctx.files.src
+    flex_outputs = [out_src, out_hdr]
+
+    args = ctx.actions.args()
+    args.add_all([
+        "--outfile=" + out_src.path,
+        "--header-file=" + out_hdr.path,
+    ])
+
+    if ctx.attr.skeleton:
+        args.add("--skel=" + ctx.file.skeleton.path)
+        inputs += ctx.files.skeleton
+
+    rule_outputs = list(flex_outputs)
+    extra_env = {}
+    if ctx.attr.language == "c++":
+        args.add("--c++")
+        flex_lexer_h = ctx.actions.declare_file("{}_FlexLexer.h".format(ctx.attr.name))
+        ctx.actions.expand_template(
+            template = flex.toolchain._flex_internal.flex_lexer_h,
+            output = flex_lexer_h,
+            substitutions = {},
+        )
+        rule_outputs.append(flex_lexer_h)
+        extra_env["FLEX_LEXER_H"] = '"{}"'.format(flex_lexer_h.short_path)
+
+    args.add_all(ctx.attr.opts)
+    args.add(ctx.file.src.path)
+
     ctx.actions.run(
         executable = flex.executable,
-        arguments = [
-            "--outfile=" + out_src.path,
-            "--header-file=" + out_hdr.path,
-            ctx.file.src.path,
-        ],
-        inputs = [ctx.file.src] + flex.inputs + m4.inputs,
-        outputs = [out_src, out_hdr],
-        env = m4.env(ctx) + flex.env(ctx),
-        input_manifests = m4.input_manifests + flex.input_manifests,
+        arguments = [args],
+        inputs = inputs,
+        outputs = flex_outputs,
+        env = m4.env + flex.env + extra_env,
+        input_manifests = flex.input_manifests + m4.input_manifests,
         mnemonic = "Flex",
         progress_message = "Generating Flex lexer {} (from {})".format(ctx.label, ctx.attr.src.label),
     )
     return DefaultInfo(
-        files = depset([out_src, out_hdr]),
+        files = depset(rule_outputs),
     )
 
 flex_lexer = rule(
-    _flex_lexer,
+    _flex_lexer_impl,
     attrs = {
         "src": attr.label(
             mandatory = True,
             single_file = True,
-            allow_files = [".l", ".ll", ".l++", ".lxx", ".lpp"],
+            allow_files = [".flex", ".l", ".ll", ".l++", ".lxx", ".lpp"],
+        ),
+        "opts": attr.string_list(
+            allow_empty = True,
+        ),
+        "language": attr.string(
+            default = "c",
+            values = ["c", "c++"],
+        ),
+        "skeleton": attr.label(
+            allow_single_file = True,
         ),
     },
-    toolchains = [FLEX_TOOLCHAIN, M4_TOOLCHAIN],
+    toolchains = [_FLEX_TOOLCHAIN, _M4_TOOLCHAIN],
 )
+"""Generate a Flex lexer implementation.
 
-def _flex_env(ctx):
-    m4 = ctx.toolchains[M4_TOOLCHAIN].m4
-    return {
-        "M4": m4.executable.path,
-    }
-
-def _flex_toolchain(ctx):
-    (inputs, _, input_manifests) = ctx.resolve_command(
-        command = "flex",
-        tools = [ctx.attr.flex],
-    )
-    return [
-        platform_common.ToolchainInfo(
-            flex = struct(
-                executable = ctx.executable.flex,
-                inputs = inputs,
-                input_manifests = input_manifests,
-                env = _flex_env,
-            ),
-        ),
-    ]
-
-flex_toolchain = rule(
-    _flex_toolchain,
-    attrs = {
-        "flex": attr.label(
-            executable = True,
-            cfg = "host",
-        ),
-    },
+```python
+load("@io_bazel_rules_flex//:flex.bzl", "flex_lexer")
+flex_lexer(
+    name = "hello",
+    src = "hello.l",
 )
+cc_binary(
+    name = "hello_bin",
+    srcs = [":hello"],
+)
+```
+"""
 
 def _check_version(version):
     if version not in _VERSION_URLS:
         fail("Flex version {} not supported by rules_flex.".format(repr(version)))
+
+_FLEX_LEXER_H_SHIM = """
+const char *flex_lexer_h = getenv("FLEX_LEXER_H");
+if (flex_lexer_h) {
+    out("\\n#include ");
+    outn(flex_lexer_h);
+} else {
+    outn("\\n#include <FlexLexer.h>");
+}
+"""
 
 def _flex_download(ctx):
     version = ctx.attr.version
@@ -142,19 +174,25 @@ def _flex_download(ctx):
     ctx.file("WORKSPACE", "workspace(name = {name})\n".format(name = repr(ctx.name)))
     ctx.symlink(ctx.attr._overlay_bin_BUILD, "bin/BUILD.bazel")
     ctx.template("BUILD.bazel", ctx.attr._overlay_BUILD, {
-        "version": version,
+        "{VERSION}": version,
     })
+
+    # Support runtime adjustment of the FlexLexer.h include line, so each flex_lexer
+    # target can depend on the FlexLexer.h it was generated for.
+    ctx.template("src/main.c", "src/main.c", substitutions = {
+        'outn ("\\n#include <FlexLexer.h>");': _FLEX_LEXER_H_SHIM,
+    }, executable = False)
 
 flex_download = repository_rule(
     _flex_download,
     attrs = {
         "version": attr.string(mandatory = True),
         "_overlay_BUILD": attr.label(
-            default = "@io_bazel_rules_flex//internal:overlay/flex_BUILD",
+            default = "@io_bazel_rules_flex//flex/internal:overlay/flex.BUILD",
             single_file = True,
         ),
         "_overlay_bin_BUILD": attr.label(
-            default = "@io_bazel_rules_flex//internal:overlay/flex_bin_BUILD",
+            default = "@io_bazel_rules_flex//flex/internal:overlay/flex_bin.BUILD",
             single_file = True,
         ),
     },
@@ -168,4 +206,4 @@ def flex_register_toolchains(version = _LATEST):
             name = repo_name,
             version = version,
         )
-    native.register_toolchains("@io_bazel_rules_flex//toolchains:v{}_toolchain".format(version))
+    native.register_toolchains("@io_bazel_rules_flex//flex/toolchains:v{}_toolchain".format(version))

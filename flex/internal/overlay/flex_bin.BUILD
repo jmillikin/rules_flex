@@ -1,5 +1,5 @@
 cc_binary(
     name = "flex",
-    deps = ["//:flex_lib"],
     visibility = ["//visibility:public"],
+    deps = ["//:flex_lib"],
 )
