@@ -1,4 +1,11 @@
+load("//flex:flex.bzl", "flex_toolchain_alias")
+
 toolchain_type(
     name = "toolchain_type",
-    visibility = ["@io_bazel_rules_flex//flex/toolchains:__pkg__"],
+    visibility = ["//visibility:public"],
+)
+
+flex_toolchain_alias(
+    name = "toolchain",
+    visibility = ["//visibility:public"],
 )
