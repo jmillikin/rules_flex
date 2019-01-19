@@ -25,6 +25,12 @@ flex_register_toolchains()
 ```
 """
 
+load(
+    "@bazel_tools//tools/build_defs/cc:action_names.bzl",
+    _ACTION_COMPILE_C = "C_COMPILE_ACTION_NAME",
+    _ACTION_COMPILE_CXX = "CPP_COMPILE_ACTION_NAME",
+    _ACTION_LINK_STATIC = "CPP_LINK_STATIC_LIBRARY_ACTION_NAME",
+)
 load("@io_bazel_rules_m4//m4:m4.bzl", _m4_common = "m4_common")
 
 # region Versions {{{
@@ -106,6 +112,146 @@ flex_common = struct(
     TOOLCHAIN_TYPE = _TOOLCHAIN_TYPE,
 )
 
+# region C++ toolchain integration {{{
+
+def _cc_library(ctx, cc_toolchain, cc_features, deps, source, out_obj, out_lib, flex_lexer_h, use_pic):
+    toolchain_inputs = ctx.attr._cc_toolchain[DefaultInfo].files
+
+    if source.extension == "c":
+        cc_action = _ACTION_COMPILE_C
+    else:
+        cc_action = _ACTION_COMPILE_CXX
+
+    headers = []
+    isystem = []
+    if flex_lexer_h:
+        headers.append(flex_lexer_h)
+        isystem.append(flex_lexer_h.dirname)
+
+    compiler = cc_common.get_tool_for_action(
+        feature_configuration = cc_features,
+        action_name = cc_action,
+    )
+
+    archiver = cc_common.get_tool_for_action(
+        feature_configuration = cc_features,
+        action_name = _ACTION_LINK_STATIC,
+    )
+
+    cc_vars = cc_common.create_compile_variables(
+        cc_toolchain = cc_toolchain,
+        feature_configuration = cc_features,
+        source_file = source.path,
+        output_file = out_obj.path,
+        use_pic = use_pic,
+        include_directories = deps.compilation_context.includes,
+        quote_include_directories = deps.compilation_context.quote_includes,
+        system_include_directories = deps.compilation_context.system_includes + depset(isystem),
+        preprocessor_defines = deps.compilation_context.defines,
+    )
+
+    ar_vars = cc_common.create_link_variables(
+        cc_toolchain = cc_toolchain,
+        feature_configuration = cc_features,
+        output_file = out_lib.path,
+        is_using_linker = False,
+        is_static_linking_mode = True,
+    )
+
+    cc_argv = cc_common.get_memory_inefficient_command_line(
+        feature_configuration = cc_features,
+        action_name = cc_action,
+        variables = cc_vars,
+    )
+
+    ar_argv = cc_common.get_memory_inefficient_command_line(
+        feature_configuration = cc_features,
+        action_name = _ACTION_LINK_STATIC,
+        variables = ar_vars,
+    )
+
+    cc_env = cc_common.get_environment_variables(
+        feature_configuration = cc_features,
+        action_name = cc_action,
+        variables = cc_vars,
+    )
+
+    ar_env = cc_common.get_environment_variables(
+        feature_configuration = cc_features,
+        action_name = _ACTION_LINK_STATIC,
+        variables = ar_vars,
+    )
+
+    ctx.actions.run(
+        inputs = toolchain_inputs + depset([source] + headers) + deps.compilation_context.headers,
+        outputs = [out_obj],
+        executable = compiler,
+        arguments = cc_argv,
+        mnemonic = "CppCompile",
+        progress_message = "Compiling {}".format(source.short_path),
+        env = cc_env,
+    )
+
+    ctx.actions.run(
+        inputs = toolchain_inputs + depset([out_obj]),
+        outputs = [out_lib],
+        executable = archiver,
+        arguments = ar_argv + [out_obj.path],
+        mnemonic = "StaticLink",
+        progress_message = "Linking {}".format(out_lib.short_path),
+        env = ar_env,
+    )
+
+def _build_cc_info(ctx, source, header, flex_lexer_h):
+    cc_toolchain = ctx.attr._cc_toolchain[cc_common.CcToolchainInfo]
+    cc_features = cc_common.configure_features(
+        cc_toolchain = cc_toolchain,
+    )
+
+    deps = cc_common.merge_cc_infos(cc_infos = [
+        dep[CcInfo]
+        for dep in ctx.attr.deps
+    ])
+
+    out_obj = ctx.actions.declare_file("{}.o".format(ctx.attr.name))
+    out_lib = ctx.actions.declare_file("lib{}.a".format(ctx.attr.name))
+    _cc_library(ctx, cc_toolchain, cc_features, deps, source, out_obj, out_lib, flex_lexer_h, use_pic = False)
+
+    out_obj_pic = ctx.actions.declare_file("{}.pic.o".format(ctx.attr.name))
+    out_lib_pic = ctx.actions.declare_file("lib{}.pic.a".format(ctx.attr.name))
+    _cc_library(ctx, cc_toolchain, cc_features, deps, source, out_obj_pic, out_lib_pic, flex_lexer_h, use_pic = True)
+
+    out_headers = []
+    out_isystem = []
+    if header:
+        out_headers.append(header)
+    if flex_lexer_h:
+        out_headers.append(flex_lexer_h)
+        out_isystem.append(flex_lexer_h.dirname)
+
+    cc_info = CcInfo(
+        compilation_context = cc_common.create_compilation_context(
+            headers = depset(out_headers),
+            system_includes = depset(out_isystem),
+        ),
+        linking_context = cc_common.create_linking_context(
+            libraries_to_link = [cc_common.create_library_to_link(
+                actions = ctx.actions,
+                feature_configuration = cc_features,
+                cc_toolchain = cc_toolchain,
+                static_library = out_lib,
+                pic_static_library = out_lib_pic,
+            )],
+        ),
+    )
+
+    return cc_common.merge_cc_infos(cc_infos = [
+        dep[CcInfo]
+        for dep in ctx.attr.deps
+    ] + [cc_info])
+
+# endregion }}}
+
 # region Build Rules {{{
 
 # region rule(flex_lexer) {{{
@@ -153,6 +299,7 @@ def _flex_lexer(ctx):
 
     return [
         DefaultInfo(files = depset(flex_outputs)),
+        _build_cc_info(ctx, source, header, flex_lexer_h),
     ]
 
 flex_lexer = rule(
@@ -163,8 +310,15 @@ flex_lexer = rule(
             single_file = True,
             allow_files = [".l", ".ll", ".l++", ".lxx", ".lpp"],
         ),
+        "deps": attr.label_list(
+            allow_empty = True,
+            providers = [CcInfo],
+        ),
         "opts": attr.string_list(
             allow_empty = True,
+        ),
+        "_cc_toolchain": attr.label(
+            default = "@bazel_tools//tools/cpp:current_cc_toolchain",
         ),
         "_flex_toolchain": attr.label(
             default = "//flex:toolchain",
@@ -177,14 +331,14 @@ flex_lexer = rule(
 """Generate a Flex lexer implementation.
 
 ```python
-load("@io_bazel_rules_flex//:flex.bzl", "flex_lexer")
+load("@io_bazel_rules_flex//flex:flex.bzl", "flex_lexer")
 flex_lexer(
     name = "hello",
     src = "hello.l",
 )
-cc_library(
-    name = "hello_lib",
-    srcs = [":hello"],
+cc_binary(
+    name = "hello_bin",
+    deps = [":hello"],
 )
 ```
 """
