@@ -38,9 +38,17 @@ load("@io_bazel_rules_m4//m4:m4.bzl", _m4_common = "m4_common")
 
 _LATEST = "2.6.4"
 
+_MIRRORS = [
+    "https://mirror.bazel.build/github.com/westes/flex/releases/download/",
+    "https://github.com/westes/flex/releases/download/",
+]
+
+def _urls(filename):
+    return [m + filename for m in _MIRRORS]
+
 _VERSION_URLS = {
     "2.6.4": {
-        "urls": ["https://github.com/westes/flex/releases/download/v2.6.4/flex-2.6.4.tar.gz"],
+        "urls": _urls("v2.6.4/flex-2.6.4.tar.gz"),
         "sha256": "e87aae032bf07c26f85ac0ed3250998c37621d95f8bd748b31f15b33c45ee995",
     },
 }
