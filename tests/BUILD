@@ -1,4 +1,4 @@
-load("@io_bazel_rules_flex//flex:flex.bzl", "flex_cc_library")
+load("@rules_flex//flex:flex.bzl", "flex_cc_library")
 
 cc_library(
     name = "hello_common",
@@ -15,8 +15,8 @@ export M4=$(M4)
 $(FLEX) --outfile=$@ $(location hello_c.l)
 """,
     toolchains = [
-        "@io_bazel_rules_flex//flex:toolchain",
-        "@io_bazel_rules_m4//m4:toolchain",
+        "@rules_flex//flex:toolchain",
+        "@rules_m4//m4:toolchain",
     ],
 )
 

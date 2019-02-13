@@ -14,17 +14,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Bazel build rules for Flex.
-
-```python
-load("@io_bazel_rules_m4//m4:m4.bzl", "m4_register_toolchains")
-m4_register_toolchains()
-
-load("@io_bazel_rules_flex//flex:flex.bzl", "flex_register_toolchains")
-flex_register_toolchains()
-```
-"""
-
 load(
     "@bazel_tools//tools/build_defs/cc:action_names.bzl",
     _ACTION_COMPILE_C = "C_COMPILE_ACTION_NAME",
@@ -32,7 +21,15 @@ load(
     _ACTION_LINK_DYNAMIC = "CPP_LINK_DYNAMIC_LIBRARY_ACTION_NAME",
     _ACTION_LINK_STATIC = "CPP_LINK_STATIC_LIBRARY_ACTION_NAME",
 )
-load("@io_bazel_rules_m4//m4:m4.bzl", _m4_common = "m4_common")
+load(
+    "@rules_flex//flex/internal:toolchain.bzl",
+    _TOOLCHAIN_TYPE = "TOOLCHAIN_TYPE",
+    _ToolchainInfo = "FlexToolchainInfo",
+)
+load(
+    "@rules_m4//m4:m4.bzl",
+    _m4_common = "m4_common",
+)
 
 # region Versions {{{
 
@@ -59,50 +56,6 @@ def _check_version(version):
 
 # endregion }}}
 
-# region Toolchain {{{
-
-_TOOLCHAIN_TYPE = "@io_bazel_rules_flex//flex:toolchain_type"
-
-_ToolchainInfo = provider(fields = ["files", "vars", "flex_executable", "flex_lexer_h"])
-
-def _flex_toolchain_info(ctx):
-    toolchain = _ToolchainInfo(
-        flex_executable = ctx.executable.flex,
-        flex_lexer_h = ctx.file.flex_lexer_h,
-        files = depset([ctx.executable.flex]),
-        vars = {"FLEX": ctx.executable.flex.path},
-    )
-    return [
-        platform_common.ToolchainInfo(flex_toolchain = toolchain),
-        platform_common.TemplateVariableInfo(toolchain.vars),
-    ]
-
-flex_toolchain_info = rule(
-    _flex_toolchain_info,
-    attrs = {
-        "flex": attr.label(
-            executable = True,
-            cfg = "host",
-        ),
-        "flex_lexer_h": attr.label(
-            allow_single_file = [".h"],
-        ),
-    },
-)
-
-def _flex_toolchain_alias(ctx):
-    toolchain = ctx.toolchains[_TOOLCHAIN_TYPE].flex_toolchain
-    return [
-        DefaultInfo(files = toolchain.files),
-        toolchain,
-        platform_common.TemplateVariableInfo(toolchain.vars),
-    ]
-
-flex_toolchain_alias = rule(
-    _flex_toolchain_alias,
-    toolchains = [_TOOLCHAIN_TYPE],
-)
-
 def flex_register_toolchains(version = _LATEST):
     _check_version(version)
     repo_name = "flex_v{}".format(version)
@@ -111,9 +64,7 @@ def flex_register_toolchains(version = _LATEST):
             name = repo_name,
             version = version,
         )
-    native.register_toolchains("@io_bazel_rules_flex//flex/toolchains:v{}".format(version))
-
-# endregion }}}
+    native.register_toolchains("@rules_flex//flex/toolchains:v{}".format(version))
 
 flex_common = struct(
     VERSIONS = list(_VERSION_URLS),
@@ -126,27 +77,32 @@ flex_common = struct(
 _COMMON_ATTR = {
     "src": attr.label(
         mandatory = True,
-        single_file = True,
-        allow_files = [".l", ".ll", ".l++", ".lxx", ".lpp"],
+        allow_single_file = [".l", ".ll", ".l++", ".lxx", ".lpp"],
     ),
-    "opts": attr.string_list(
-        allow_empty = True,
-    ),
+    "flex_options": attr.string_list(),
     "_flex_toolchain": attr.label(
-        default = "//flex:toolchain",
+        default = "@rules_flex//flex:toolchain",
+    ),
+    "_m4_deny_shell": attr.label(
+        executable = True,
+        cfg = "host",
+        default = "@rules_flex//flex/internal:m4_deny_shell",
     ),
     "_m4_toolchain": attr.label(
-        default = "@io_bazel_rules_m4//m4:toolchain",
+        default = "@rules_m4//m4:toolchain",
     ),
 }
+
+def _flex_attrs(rule_attrs):
+    rule_attrs.update(_COMMON_ATTR)
+    return rule_attrs
 
 def _flex_common(ctx):
     m4_toolchain = ctx.attr._m4_toolchain[_m4_common.ToolchainInfo]
     flex_toolchain = ctx.attr._flex_toolchain[flex_common.ToolchainInfo]
 
     args = ctx.actions.args()
-    flex_inputs = m4_toolchain.files + flex_toolchain.files + ctx.files.src
-    flex_outputs = []
+    outputs = []
     header = None
 
     if ctx.file.src.extension == "l":
@@ -155,34 +111,44 @@ def _flex_common(ctx):
         # The Flex manual documents that `--header-file` and `--c++` are incompatible.
         header = ctx.actions.declare_file("{}.h".format(ctx.attr.name))
         args.add("--header-file=" + header.path)
-        flex_outputs.append(header)
+        outputs.append(header)
     else:
         src_ext = "cc"
         args.add("--c++")
 
     source = ctx.actions.declare_file("{}.{}".format(ctx.attr.name, src_ext))
     args.add("--outfile=" + source.path)
-    flex_outputs.append(source)
+    outputs.append(source)
 
-    args.add_all(ctx.attr.opts)
-    args.add(ctx.file.src.path)
+    args.add_all(ctx.attr.flex_options)
+    args.add_all(ctx.files.src)
 
     ctx.actions.run(
         executable = flex_toolchain.flex_executable,
         arguments = [args],
-        inputs = flex_inputs,
-        outputs = flex_outputs,
+        inputs = depset(
+            direct = ctx.files.src,
+            transitive = [
+                flex_toolchain.files,
+                m4_toolchain.files,
+            ],
+        ),
+        outputs = outputs,
+        tools = [
+            ctx.executable._m4_deny_shell,
+        ],
         env = {
             "M4": m4_toolchain.m4_executable.path,
+            "M4_SYSCMD_SHELL": ctx.executable._m4_deny_shell.path,
         },
         mnemonic = "Flex",
-        progress_message = "Generating {}".format(ctx.label),
+        progress_message = "Flex {}".format(ctx.label),
     )
 
     return struct(
         source = source,
         header = header,
-        outs = depset(flex_outputs),
+        outs = depset(direct = outputs),
     )
 
 # region rule(flex) {{{
@@ -195,20 +161,6 @@ flex = rule(
     _flex,
     attrs = _COMMON_ATTR,
 )
-"""Generate a Flex lexer implementation.
-
-```python
-load("@io_bazel_rules_flex//flex:flex.bzl", "flex")
-flex(
-    name = "hello",
-    src = "hello.l",
-)
-cc_binary(
-    name = "hello_bin",
-    srcs = [":hello"],
-)
-```
-"""
 
 # endregion }}}
 
@@ -242,12 +194,22 @@ def _cc_compile(ctx, cc_toolchain, cc_features, deps, source, header, out_obj, u
         output_file = out_obj.path,
         use_pic = use_pic,
         include_directories = deps.compilation_context.includes,
-        quote_include_directories = depset([
-            ".",
-            ctx.genfiles_dir.path,
-            ctx.bin_dir.path,
-        ]) + deps.compilation_context.quote_includes,
-        system_include_directories = deps.compilation_context.system_includes + depset(isystem),
+        quote_include_directories = depset(
+            direct = [
+                ".",
+                ctx.genfiles_dir.path,
+                ctx.bin_dir.path,
+            ],
+            transitive = [
+                deps.compilation_context.quote_includes,
+            ],
+        ),
+        system_include_directories = depset(
+            direct = isystem,
+            transitive = [
+                deps.compilation_context.system_includes,
+            ],
+        ),
         preprocessor_defines = deps.compilation_context.defines,
     )
 
@@ -264,7 +226,13 @@ def _cc_compile(ctx, cc_toolchain, cc_features, deps, source, header, out_obj, u
     )
 
     ctx.actions.run(
-        inputs = toolchain_inputs + deps.compilation_context.headers + depset([source] + headers),
+        inputs = depset(
+            direct = [source] + headers,
+            transitive = [
+                toolchain_inputs,
+                deps.compilation_context.headers,
+            ],
+        ),
         outputs = [out_obj],
         executable = cc,
         arguments = cc_argv,
@@ -302,7 +270,10 @@ def _cc_link_static(ctx, cc_toolchain, cc_features, deps, obj, out_lib):
     )
 
     ctx.actions.run(
-        inputs = toolchain_inputs + depset([obj]),
+        inputs = depset(
+            direct = [obj],
+            transitive = [toolchain_inputs],
+        ),
         outputs = [out_lib],
         executable = ar,
         arguments = ar_argv + [obj.path],
@@ -341,7 +312,10 @@ def _cc_link_dynamic(ctx, cc_toolchain, cc_features, deps, obj, out_lib):
     )
 
     ctx.actions.run(
-        inputs = toolchain_inputs + depset([obj]),
+        inputs = depset(
+            direct = [obj],
+            transitive = [toolchain_inputs],
+        ),
         outputs = [out_lib],
         executable = ld,
         arguments = ld_argv + [obj.path],
@@ -356,6 +330,11 @@ def _obj_name(ctx, src, pic):
     pic_ext = ""
     if pic:
         pic_ext = "pic."
+
+    # Note: this returns the wrong value on Windows, though MSVC is gracious
+    # enough to accept UNIX object extensions.
+    #
+    # https://github.com/bazelbuild/bazel/issues/7170
     return "_objs/{}/{}{}o".format(ctx.attr.name, base, pic_ext)
 
 def _build_cc_info(ctx, source, header):
@@ -401,8 +380,8 @@ def _build_cc_info(ctx, source, header):
 
     cc_info = CcInfo(
         compilation_context = cc_common.create_compilation_context(
-            headers = depset(out_headers),
-            system_includes = depset(out_isystem),
+            headers = depset(direct = out_headers),
+            system_includes = depset(direct = out_isystem),
         ),
         linking_context = cc_common.create_linking_context(
             libraries_to_link = [
@@ -425,7 +404,7 @@ def _build_cc_info(ctx, source, header):
 
     return struct(
         cc_info = cc_common.merge_cc_infos(cc_infos = [deps, cc_info]),
-        outs = depset([out_lib, out_dylib]),
+        outs = depset(direct = [out_lib, out_dylib]),
     )
 
 # endregion }}}
@@ -440,30 +419,15 @@ def _flex_cc_library(ctx):
 
 flex_cc_library = rule(
     _flex_cc_library,
-    attrs = _COMMON_ATTR + {
+    attrs = _flex_attrs({
         "deps": attr.label_list(
-            allow_empty = True,
             providers = [CcInfo],
         ),
         "_cc_toolchain": attr.label(
             default = "@bazel_tools//tools/cpp:current_cc_toolchain",
         ),
-    },
+    }),
 )
-"""Generate a Flex lexer implementation.
-
-```python
-load("@io_bazel_rules_flex//flex:flex.bzl", "flex_cc_library")
-flex_cc_library(
-    name = "hello",
-    src = "hello.l",
-)
-cc_binary(
-    name = "hello_bin",
-    deps = [":hello"],
-)
-```
-"""
 
 # endregion }}}
 
@@ -494,11 +458,11 @@ flex_repository = repository_rule(
         "version": attr.string(mandatory = True),
         "_overlay_BUILD": attr.label(
             default = "//flex/internal:overlay/flex.BUILD",
-            single_file = True,
+            allow_single_file = True,
         ),
         "_overlay_bin_BUILD": attr.label(
             default = "//flex/internal:overlay/flex_bin.BUILD",
-            single_file = True,
+            allow_single_file = True,
         ),
     },
 )

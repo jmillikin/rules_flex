@@ -1,4 +1,5 @@
-load("//flex:flex.bzl", "flex_common", "flex_toolchain_info")
+load("@rules_flex//flex:flex.bzl", "flex_common")
+load("@rules_flex//flex/internal:toolchain.bzl", "flex_toolchain_info")
 
 [flex_toolchain_info(
     name = "toolchain_v{}".format(version),
@@ -7,3 +8,9 @@ load("//flex:flex.bzl", "flex_common", "flex_toolchain_info")
     tags = ["manual"],
     visibility = ["//visibility:public"],
 ) for version in flex_common.VERSIONS]
+
+cc_binary(
+    name = "m4_deny_shell",
+    srcs = ["m4_deny_shell.c"],
+    visibility = ["//visibility:public"],
+)

@@ -1,7 +1,7 @@
 filegroup(
     name = "flex_lexer_h",
     srcs = ["src/FlexLexer.h"],
-    visibility = ["@io_bazel_rules_flex//flex/internal:__pkg__"],
+    visibility = ["@rules_flex//flex/internal:__pkg__"],
 )
 
 cc_library(
