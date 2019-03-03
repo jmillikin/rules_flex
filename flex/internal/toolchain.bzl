@@ -16,10 +16,10 @@
 
 TOOLCHAIN_TYPE = "@rules_flex//flex:toolchain_type"
 
-FlexToolchainInfo = provider(fields = ["files", "vars", "flex_executable", "flex_lexer_h"])
+ToolchainInfo = provider(fields = ["files", "vars", "flex_executable", "flex_lexer_h"])
 
 def _flex_toolchain_info(ctx):
-    toolchain = FlexToolchainInfo(
+    toolchain = ToolchainInfo(
         flex_executable = ctx.executable.flex,
         flex_lexer_h = ctx.file.flex_lexer_h,
         files = depset(direct = [ctx.executable.flex]),
@@ -62,7 +62,7 @@ flex_toolchain_alias = rule(
     toolchains = [TOOLCHAIN_TYPE],
     provides = [
         DefaultInfo,
-        FlexToolchainInfo,
+        ToolchainInfo,
         platform_common.TemplateVariableInfo,
     ],
 )

@@ -22,41 +22,36 @@ load(
     _ACTION_LINK_STATIC = "CPP_LINK_STATIC_LIBRARY_ACTION_NAME",
 )
 load(
+    "@rules_flex//flex/internal:repository.bzl",
+    _flex_repository = "flex_repository",
+)
+load(
     "@rules_flex//flex/internal:toolchain.bzl",
     _TOOLCHAIN_TYPE = "TOOLCHAIN_TYPE",
-    _ToolchainInfo = "FlexToolchainInfo",
+    _ToolchainInfo = "ToolchainInfo",
+)
+load(
+    "@rules_flex//flex/internal:versions.bzl",
+    _DEFAULT_VERSION = "DEFAULT_VERSION",
+    _check_version = "check_version",
 )
 load(
     "@rules_m4//m4:m4.bzl",
     _m4_common = "m4_common",
 )
 
-# region Versions {{{
+flex_repository = _flex_repository
 
-_LATEST = "2.6.4"
+def _ctx_toolchain(ctx):
+    return ctx.toolchains[_TOOLCHAIN_TYPE].flex_toolchain
 
-_MIRRORS = [
-    "https://mirror.bazel.build/github.com/westes/flex/releases/download/",
-    "https://github.com/westes/flex/releases/download/",
-]
+flex_common = struct(
+    TOOLCHAIN_TYPE = _TOOLCHAIN_TYPE,
+    ToolchainInfo = _ToolchainInfo,
+    flex_toolchain = _ctx_toolchain,
+)
 
-def _urls(filename):
-    return [m + filename for m in _MIRRORS]
-
-_VERSION_URLS = {
-    "2.6.4": {
-        "urls": _urls("v2.6.4/flex-2.6.4.tar.gz"),
-        "sha256": "e87aae032bf07c26f85ac0ed3250998c37621d95f8bd748b31f15b33c45ee995",
-    },
-}
-
-def _check_version(version):
-    if version not in _VERSION_URLS:
-        fail("Flex version {} not supported by rules_flex.".format(repr(version)))
-
-# endregion }}}
-
-def flex_register_toolchains(version = _LATEST):
+def flex_register_toolchains(version = _DEFAULT_VERSION):
     _check_version(version)
     repo_name = "flex_v{}".format(version)
     if repo_name not in native.existing_rules().keys():
@@ -66,30 +61,16 @@ def flex_register_toolchains(version = _LATEST):
         )
     native.register_toolchains("@rules_flex//flex/toolchains:v{}".format(version))
 
-flex_common = struct(
-    VERSIONS = list(_VERSION_URLS),
-    ToolchainInfo = _ToolchainInfo,
-    TOOLCHAIN_TYPE = _TOOLCHAIN_TYPE,
-)
-
-# region Build Rules {{{
-
 _COMMON_ATTR = {
     "src": attr.label(
         mandatory = True,
         allow_single_file = [".l", ".ll", ".l++", ".lxx", ".lpp"],
     ),
     "flex_options": attr.string_list(),
-    "_flex_toolchain": attr.label(
-        default = "@rules_flex//flex:toolchain",
-    ),
     "_m4_deny_shell": attr.label(
         executable = True,
         cfg = "host",
         default = "@rules_flex//flex/internal:m4_deny_shell",
-    ),
-    "_m4_toolchain": attr.label(
-        default = "@rules_m4//m4:toolchain",
     ),
 }
 
@@ -98,8 +79,8 @@ def _flex_attrs(rule_attrs):
     return rule_attrs
 
 def _flex_common(ctx):
-    m4_toolchain = ctx.attr._m4_toolchain[_m4_common.ToolchainInfo]
-    flex_toolchain = ctx.attr._flex_toolchain[flex_common.ToolchainInfo]
+    m4_toolchain = _m4_common.m4_toolchain(ctx)
+    flex_toolchain = flex_common.flex_toolchain(ctx)
 
     args = ctx.actions.args()
     outputs = []
@@ -151,8 +132,6 @@ def _flex_common(ctx):
         outs = depset(direct = outputs),
     )
 
-# region rule(flex) {{{
-
 def _flex(ctx):
     result = _flex_common(ctx)
     return DefaultInfo(files = result.outs)
@@ -160,17 +139,15 @@ def _flex(ctx):
 flex = rule(
     _flex,
     attrs = _COMMON_ATTR,
+    toolchains = [
+        _m4_common.TOOLCHAIN_TYPE,
+        flex_common.TOOLCHAIN_TYPE,
+    ],
 )
-
-# endregion }}}
-
-# region rule(flex_cc_library) {{{
-
-# region C++ toolchain integration {{{
 
 def _cc_compile(ctx, cc_toolchain, cc_features, deps, source, header, out_obj, use_pic):
     toolchain_inputs = ctx.attr._cc_toolchain[DefaultInfo].files
-    flex_toolchain = ctx.attr._flex_toolchain[flex_common.ToolchainInfo]
+    flex_toolchain = flex_common.flex_toolchain(ctx)
 
     headers = []
     isystem = []
@@ -339,7 +316,7 @@ def _obj_name(ctx, src, pic):
 
 def _build_cc_info(ctx, source, header):
     cc_toolchain = ctx.attr._cc_toolchain[cc_common.CcToolchainInfo]
-    flex_toolchain = ctx.attr._flex_toolchain[flex_common.ToolchainInfo]
+    flex_toolchain = flex_common.flex_toolchain(ctx)
 
     cc_features = cc_common.configure_features(
         cc_toolchain = cc_toolchain,
@@ -407,8 +384,6 @@ def _build_cc_info(ctx, source, header):
         outs = depset(direct = [out_lib, out_dylib]),
     )
 
-# endregion }}}
-
 def _flex_cc_library(ctx):
     result = _flex_common(ctx)
     cc = _build_cc_info(ctx, result.source, result.header)
@@ -427,44 +402,8 @@ flex_cc_library = rule(
             default = "@bazel_tools//tools/cpp:current_cc_toolchain",
         ),
     }),
+    toolchains = [
+        _m4_common.TOOLCHAIN_TYPE,
+        flex_common.TOOLCHAIN_TYPE,
+    ],
 )
-
-# endregion }}}
-
-# endregion }}}
-
-# region Repository Rules {{{
-
-def _flex_repository(ctx):
-    version = ctx.attr.version
-    _check_version(version)
-    source = _VERSION_URLS[version]
-
-    ctx.download_and_extract(
-        url = source["urls"],
-        sha256 = source["sha256"],
-        stripPrefix = "flex-{}".format(version),
-    )
-
-    ctx.file("WORKSPACE", "workspace(name = {name})\n".format(name = repr(ctx.name)))
-    ctx.symlink(ctx.attr._overlay_bin_BUILD, "bin/BUILD.bazel")
-    ctx.template("BUILD.bazel", ctx.attr._overlay_BUILD, {
-        "{VERSION}": version,
-    })
-
-flex_repository = repository_rule(
-    _flex_repository,
-    attrs = {
-        "version": attr.string(mandatory = True),
-        "_overlay_BUILD": attr.label(
-            default = "//flex/internal:overlay/flex.BUILD",
-            allow_single_file = True,
-        ),
-        "_overlay_bin_BUILD": attr.label(
-            default = "//flex/internal:overlay/flex_bin.BUILD",
-            allow_single_file = True,
-        ),
-    },
-)
-
-# endregion }}}
