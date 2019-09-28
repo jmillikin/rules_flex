@@ -15,13 +15,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load(
-    "@bazel_tools//tools/build_defs/cc:action_names.bzl",
-    _ACTION_COMPILE_C = "C_COMPILE_ACTION_NAME",
-    _ACTION_COMPILE_CXX = "CPP_COMPILE_ACTION_NAME",
-    _ACTION_LINK_DYNAMIC = "CPP_LINK_DYNAMIC_LIBRARY_ACTION_NAME",
-    _ACTION_LINK_STATIC = "CPP_LINK_STATIC_LIBRARY_ACTION_NAME",
-)
-load(
     "@rules_flex//flex/internal:repository.bzl",
     _flex_repository = "flex_repository",
 )
@@ -145,251 +138,71 @@ flex = rule(
     ],
 )
 
-def _cc_compile(ctx, cc_toolchain, cc_features, deps, source, header, out_obj, use_pic):
-    toolchain_inputs = ctx.attr._cc_toolchain[DefaultInfo].files
-    flex_toolchain = flex_common.flex_toolchain(ctx)
-
-    headers = []
-    isystem = []
-    if source.extension == "c":
-        cc_action = _ACTION_COMPILE_C
-    else:
-        cc_action = _ACTION_COMPILE_CXX
-        flex_lexer_h = flex_toolchain.flex_lexer_h
-        headers.append(flex_lexer_h)
-        isystem.append(flex_lexer_h.dirname)
-
-    cc = cc_common.get_tool_for_action(
-        feature_configuration = cc_features,
-        action_name = cc_action,
-    )
-
-    cc_vars = cc_common.create_compile_variables(
-        cc_toolchain = cc_toolchain,
-        feature_configuration = cc_features,
-        source_file = source.path,
-        output_file = out_obj.path,
-        use_pic = use_pic,
-        include_directories = deps.compilation_context.includes,
-        quote_include_directories = depset(
-            direct = [
-                ".",
-                ctx.genfiles_dir.path,
-                ctx.bin_dir.path,
-            ],
-            transitive = [
-                deps.compilation_context.quote_includes,
-            ],
-        ),
-        system_include_directories = depset(
-            direct = isystem,
-            transitive = [
-                deps.compilation_context.system_includes,
-            ],
-        ),
-        preprocessor_defines = deps.compilation_context.defines,
-    )
-
-    cc_argv = cc_common.get_memory_inefficient_command_line(
-        feature_configuration = cc_features,
-        action_name = cc_action,
-        variables = cc_vars,
-    )
-
-    cc_env = cc_common.get_environment_variables(
-        feature_configuration = cc_features,
-        action_name = cc_action,
-        variables = cc_vars,
-    )
-
-    ctx.actions.run(
-        inputs = depset(
-            direct = [source] + headers,
-            transitive = [
-                toolchain_inputs,
-                deps.compilation_context.headers,
-            ],
-        ),
-        outputs = [out_obj],
-        executable = cc,
-        arguments = cc_argv,
-        mnemonic = "CppCompile",
-        progress_message = "Compiling {}".format(source.short_path),
-        env = cc_env,
-    )
-
-def _cc_link_static(ctx, cc_toolchain, cc_features, deps, obj, out_lib):
-    toolchain_inputs = ctx.attr._cc_toolchain[DefaultInfo].files
-
-    ar = cc_common.get_tool_for_action(
-        feature_configuration = cc_features,
-        action_name = _ACTION_LINK_STATIC,
-    )
-
-    ar_vars = cc_common.create_link_variables(
-        cc_toolchain = cc_toolchain,
-        feature_configuration = cc_features,
-        output_file = out_lib.path,
-        is_using_linker = False,
-        is_static_linking_mode = True,
-    )
-
-    ar_argv = cc_common.get_memory_inefficient_command_line(
-        feature_configuration = cc_features,
-        action_name = _ACTION_LINK_STATIC,
-        variables = ar_vars,
-    )
-
-    ar_env = cc_common.get_environment_variables(
-        feature_configuration = cc_features,
-        action_name = _ACTION_LINK_STATIC,
-        variables = ar_vars,
-    )
-
-    ctx.actions.run(
-        inputs = depset(
-            direct = [obj],
-            transitive = [toolchain_inputs],
-        ),
-        outputs = [out_lib],
-        executable = ar,
-        arguments = ar_argv + [obj.path],
-        mnemonic = "CppLink",
-        progress_message = "Linking {}".format(out_lib.short_path),
-        env = ar_env,
-    )
-
-def _cc_link_dynamic(ctx, cc_toolchain, cc_features, deps, obj, out_lib):
-    toolchain_inputs = ctx.attr._cc_toolchain[DefaultInfo].files
-
-    ld = cc_common.get_tool_for_action(
-        feature_configuration = cc_features,
-        action_name = _ACTION_LINK_DYNAMIC,
-    )
-
-    ld_vars = cc_common.create_link_variables(
-        cc_toolchain = cc_toolchain,
-        feature_configuration = cc_features,
-        output_file = out_lib.path,
-        is_using_linker = True,
-        is_static_linking_mode = False,
-        is_linking_dynamic_library = True,
-    )
-
-    ld_argv = cc_common.get_memory_inefficient_command_line(
-        feature_configuration = cc_features,
-        action_name = _ACTION_LINK_DYNAMIC,
-        variables = ld_vars,
-    )
-
-    ld_env = cc_common.get_environment_variables(
-        feature_configuration = cc_features,
-        action_name = _ACTION_LINK_DYNAMIC,
-        variables = ld_vars,
-    )
-
-    ctx.actions.run(
-        inputs = depset(
-            direct = [obj],
-            transitive = [toolchain_inputs],
-        ),
-        outputs = [out_lib],
-        executable = ld,
-        arguments = ld_argv + [obj.path],
-        mnemonic = "CppLink",
-        progress_message = "Linking {}".format(out_lib.short_path),
-        env = ld_env,
-    )
-
-def _obj_name(ctx, src, pic):
-    ext = src.extension
-    base = src.basename[:-len(ext)]
-    pic_ext = ""
-    if pic:
-        pic_ext = "pic."
-
-    # Note: this returns the wrong value on Windows, though MSVC is gracious
-    # enough to accept UNIX object extensions.
-    #
-    # https://github.com/bazelbuild/bazel/issues/7170
-    return "_objs/{}/{}{}o".format(ctx.attr.name, base, pic_ext)
-
-def _build_cc_info(ctx, source, header):
+def _cc_library(ctx, flex_result, flex_lexer_h):
     cc_toolchain = ctx.attr._cc_toolchain[cc_common.CcToolchainInfo]
-    flex_toolchain = flex_common.flex_toolchain(ctx)
 
-    cc_features = cc_common.configure_features(
-        cc_toolchain = cc_toolchain,
-    )
-    ar_features = cc_common.configure_features(
-        cc_toolchain = cc_toolchain,
-    )
-    ld_features = cc_common.configure_features(
-        cc_toolchain = cc_toolchain,
-        requested_features = ["dynamic_linking_mode"],
-    )
-
-    use_pic = cc_toolchain.needs_pic_for_dynamic_libraries(
-        feature_configuration = ld_features,
-    )
-
-    deps = cc_common.merge_cc_infos(cc_infos = [
+    cc_deps = cc_common.merge_cc_infos(cc_infos = [
         dep[CcInfo]
         for dep in ctx.attr.deps
     ])
 
-    out_obj = ctx.actions.declare_file(_obj_name(ctx, source, use_pic))
-    out_lib = ctx.actions.declare_file("lib{}.a".format(ctx.attr.name))
-    out_dylib = ctx.actions.declare_file("lib{}.so".format(ctx.attr.name))
-
-    out_headers = []
-    out_isystem = []
-    if header:
-        out_headers.append(header)
+    cc_public_hdrs = []
+    cc_private_hdrs = []
+    cc_system_includes = []
+    if flex_result.header:
+        cc_public_hdrs.append(flex_result.header)
     else:
-        flex_lexer_h = flex_toolchain.flex_lexer_h
-        out_headers.append(flex_lexer_h)
-        out_isystem.append(flex_lexer_h.dirname)
+        cc_private_hdrs.append(flex_lexer_h)
+        cc_system_includes.append(flex_lexer_h.dirname)
 
-    _cc_compile(ctx, cc_toolchain, cc_features, deps, source, header, out_obj, use_pic)
-    _cc_link_static(ctx, cc_toolchain, ar_features, deps, out_obj, out_lib)
-    _cc_link_dynamic(ctx, cc_toolchain, ld_features, deps, out_obj, out_dylib)
-
-    cc_info = CcInfo(
-        compilation_context = cc_common.create_compilation_context(
-            headers = depset(direct = out_headers),
-            system_includes = depset(direct = out_isystem),
-        ),
-        linking_context = cc_common.create_linking_context(
-            libraries_to_link = [
-                cc_common.create_library_to_link(
-                    actions = ctx.actions,
-                    feature_configuration = ar_features,
-                    cc_toolchain = cc_toolchain,
-                    static_library = None if use_pic else out_lib,
-                    pic_static_library = out_lib if use_pic else None,
-                ),
-                cc_common.create_library_to_link(
-                    actions = ctx.actions,
-                    feature_configuration = ld_features,
-                    cc_toolchain = cc_toolchain,
-                    dynamic_library = out_dylib,
-                ),
-            ],
-        ),
+    cc_feature_configuration = cc_common.configure_features(
+        ctx = ctx,
+        cc_toolchain = cc_toolchain,
+        requested_features = ctx.attr.features,
     )
 
+    (cc_compilation_context, cc_compilation_outputs) = cc_common.compile(
+        name = ctx.attr.name,
+        actions = ctx.actions,
+        cc_toolchain = cc_toolchain,
+        feature_configuration = cc_feature_configuration,
+        srcs = [flex_result.source],
+        public_hdrs = cc_public_hdrs,
+        private_hdrs = cc_private_hdrs,
+        system_includes = cc_system_includes,
+        compilation_contexts = [cc_deps.compilation_context],
+    )
+
+    (cc_linking_context, cc_linking_outputs) = cc_common.create_linking_context_from_compilation_outputs(
+        name = ctx.attr.name,
+        actions = ctx.actions,
+        feature_configuration = cc_feature_configuration,
+        cc_toolchain = cc_toolchain,
+        compilation_outputs = cc_compilation_outputs,
+        linking_contexts = [cc_deps.linking_context],
+    )
+
+    outs = []
+    if cc_linking_outputs.library_to_link.static_library:
+        outs.append(cc_linking_outputs.library_to_link.static_library)
+    if cc_linking_outputs.library_to_link.dynamic_library:
+        outs.append(cc_linking_outputs.library_to_link.dynamic_library)
+
     return struct(
-        cc_info = cc_common.merge_cc_infos(cc_infos = [deps, cc_info]),
-        outs = depset(direct = [out_lib, out_dylib]),
+        outs = depset(direct = outs),
+        cc_info = CcInfo(
+            compilation_context = cc_compilation_context,
+            linking_context = cc_linking_context,
+        ),
     )
 
 def _flex_cc_library(ctx):
+    flex_toolchain = flex_common.flex_toolchain(ctx)
     result = _flex_common(ctx)
-    cc = _build_cc_info(ctx, result.source, result.header)
+    cc_lib = _cc_library(ctx, result, flex_toolchain.flex_lexer_h)
     return [
-        DefaultInfo(files = cc.outs),
-        cc.cc_info,
+        DefaultInfo(files = cc_lib.outs),
+        cc_lib.cc_info,
     ]
 
 flex_cc_library = rule(
@@ -402,8 +215,13 @@ flex_cc_library = rule(
             default = "@bazel_tools//tools/cpp:current_cc_toolchain",
         ),
     }),
+    provides = [
+        CcInfo,
+        DefaultInfo,
+    ],
     toolchains = [
         _m4_common.TOOLCHAIN_TYPE,
         flex_common.TOOLCHAIN_TYPE,
     ],
+    fragments = ["cpp"],
 )
