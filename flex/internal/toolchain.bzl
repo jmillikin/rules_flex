@@ -77,9 +77,16 @@ flex_toolchain_info = rule(
 
 def _flex_toolchain_alias(ctx):
     toolchain = ctx.toolchains[FLEX_TOOLCHAIN_TYPE].flex_toolchain
+    flex_lexer_h = toolchain.flex_lexer_h
     return [
         DefaultInfo(files = toolchain.all_files),
         _template_vars(toolchain),
+        CcInfo(
+            compilation_context = cc_common.create_compilation_context(
+                headers = depset(direct = [flex_lexer_h]),
+                system_includes = depset(direct = [flex_lexer_h.dirname]),
+            ),
+        ),
     ]
 
 flex_toolchain_alias = rule(
@@ -87,6 +94,7 @@ flex_toolchain_alias = rule(
     toolchains = [FLEX_TOOLCHAIN_TYPE],
     provides = [
         DefaultInfo,
+        CcInfo,
         platform_common.TemplateVariableInfo,
     ],
 )

@@ -10,10 +10,7 @@ genrule(
     name = "genrule_test",
     srcs = ["hello_c.l"],
     outs = ["genrule_output.c"],
-    cmd = """
-export M4=$(M4)
-$(FLEX) --outfile=$@ $(location hello_c.l)
-""",
+    cmd = "M4=$(M4) $(FLEX) --outfile=$@ $(location hello_c.l)",
     toolchains = [
         "@rules_flex//flex:current_flex_toolchain",
         "@rules_m4//m4:current_m4_toolchain",
@@ -42,4 +39,27 @@ cc_binary(
     name = "hello_cc_bin",
     srcs = ["hello_cc.cc"],
     deps = [":hello_cc"],
+)
+
+genrule(
+    name = "genrule_flex_cc",
+    srcs = ["hello_cc.ll"],
+    outs = ["genrule_flex_cc.cc"],
+    cmd = "M4=$(M4) $(FLEX) --outfile=$@ --c++ $(location hello_cc.ll)",
+    toolchains = [
+        "@rules_flex//flex:current_flex_toolchain",
+        "@rules_m4//m4:current_m4_toolchain",
+    ],
+)
+
+cc_binary(
+    name = "genrule_flex_cc_bin",
+    srcs = [
+        "genrule_flex_cc.cc",
+        "hello_cc.cc",
+    ],
+    deps = [
+        ":hello_common",
+        "@rules_flex//flex:current_flex_toolchain",
+    ],
 )
