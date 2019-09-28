@@ -3,7 +3,7 @@ load("@rules_flex//flex/internal:toolchain.bzl", "flex_toolchain_info")
 
 [flex_toolchain_info(
     name = "toolchain_v{}".format(version),
-    flex = "@flex_v{}//bin:flex".format(version),
+    flex_tool = "@flex_v{}//bin:flex".format(version),
     flex_lexer_h = "@flex_v{}//:flex_lexer_h".format(version),
     tags = ["manual"],
     visibility = ["//visibility:public"],

@@ -15,8 +15,8 @@ export M4=$(M4)
 $(FLEX) --outfile=$@ $(location hello_c.l)
 """,
     toolchains = [
-        "@rules_flex//flex:toolchain",
-        "@rules_m4//m4:toolchain",
+        "@rules_flex//flex:current_flex_toolchain",
+        "@rules_m4//m4:current_m4_toolchain",
     ],
 )
 

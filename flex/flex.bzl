@@ -14,38 +14,19 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load(
-    "@rules_flex//flex/internal:repository.bzl",
-    _flex_repository = "flex_repository",
-)
-load(
-    "@rules_flex//flex/internal:toolchain.bzl",
-    _TOOLCHAIN_TYPE = "TOOLCHAIN_TYPE",
-    _ToolchainInfo = "ToolchainInfo",
-)
-load(
-    "@rules_flex//flex/internal:versions.bzl",
-    _DEFAULT_VERSION = "DEFAULT_VERSION",
-    _check_version = "check_version",
-)
-load(
-    "@rules_m4//m4:m4.bzl",
-    _m4_common = "m4_common",
-)
+load("@rules_flex//flex/internal:repository.bzl", _flex_repository = "flex_repository")
+load("@rules_flex//flex/internal:toolchain.bzl", _FLEX_TOOLCHAIN_TYPE = "FLEX_TOOLCHAIN_TYPE")
+load("@rules_flex//flex/internal:versions.bzl", "DEFAULT_VERSION", "check_version")
+load("@rules_m4//m4:m4.bzl", "M4_TOOLCHAIN_TYPE")
 
+FLEX_TOOLCHAIN_TYPE = _FLEX_TOOLCHAIN_TYPE
 flex_repository = _flex_repository
 
-def _ctx_toolchain(ctx):
-    return ctx.toolchains[_TOOLCHAIN_TYPE].flex_toolchain
+def flex_toolchain(ctx):
+    return ctx.toolchains[FLEX_TOOLCHAIN_TYPE].flex_toolchain
 
-flex_common = struct(
-    TOOLCHAIN_TYPE = _TOOLCHAIN_TYPE,
-    ToolchainInfo = _ToolchainInfo,
-    flex_toolchain = _ctx_toolchain,
-)
-
-def flex_register_toolchains(version = _DEFAULT_VERSION):
-    _check_version(version)
+def flex_register_toolchains(version = DEFAULT_VERSION):
+    check_version(version)
     repo_name = "flex_v{}".format(version)
     if repo_name not in native.existing_rules().keys():
         flex_repository(
@@ -67,13 +48,17 @@ _COMMON_ATTR = {
     ),
 }
 
+_FLEX_RULE_TOOLCHAINS = [
+    M4_TOOLCHAIN_TYPE,
+    FLEX_TOOLCHAIN_TYPE,
+]
+
 def _flex_attrs(rule_attrs):
     rule_attrs.update(_COMMON_ATTR)
     return rule_attrs
 
 def _flex_common(ctx):
-    m4_toolchain = _m4_common.m4_toolchain(ctx)
-    flex_toolchain = flex_common.flex_toolchain(ctx)
+    flex = flex_toolchain(ctx)
 
     args = ctx.actions.args()
     outputs = []
@@ -98,23 +83,17 @@ def _flex_common(ctx):
     args.add_all(ctx.files.src)
 
     ctx.actions.run(
-        executable = flex_toolchain.flex_executable,
+        executable = flex.flex_tool,
         arguments = [args],
-        inputs = depset(
-            direct = ctx.files.src,
-            transitive = [
-                flex_toolchain.files,
-                m4_toolchain.files,
-            ],
-        ),
+        inputs = depset(direct = ctx.files.src),
         outputs = outputs,
         tools = [
             ctx.executable._m4_deny_shell,
         ],
-        env = {
-            "M4": m4_toolchain.m4_executable.path,
-            "M4_SYSCMD_SHELL": ctx.executable._m4_deny_shell.path,
-        },
+        env = dict(
+            flex.flex_env,
+            M4_SYSCMD_SHELL = ctx.executable._m4_deny_shell.path,
+        ),
         mnemonic = "Flex",
         progress_message = "Flex {}".format(ctx.label),
     )
@@ -132,13 +111,11 @@ def _flex(ctx):
 flex = rule(
     _flex,
     attrs = _COMMON_ATTR,
-    toolchains = [
-        _m4_common.TOOLCHAIN_TYPE,
-        flex_common.TOOLCHAIN_TYPE,
-    ],
+    toolchains = _FLEX_RULE_TOOLCHAINS,
 )
 
-def _cc_library(ctx, flex_result, flex_lexer_h):
+def _cc_library(ctx, flex_result):
+    flex_lexer_h = flex_toolchain(ctx).flex_lexer_h
     cc_toolchain = ctx.attr._cc_toolchain[cc_common.CcToolchainInfo]
 
     cc_deps = cc_common.merge_cc_infos(cc_infos = [
@@ -197,9 +174,8 @@ def _cc_library(ctx, flex_result, flex_lexer_h):
     )
 
 def _flex_cc_library(ctx):
-    flex_toolchain = flex_common.flex_toolchain(ctx)
     result = _flex_common(ctx)
-    cc_lib = _cc_library(ctx, result, flex_toolchain.flex_lexer_h)
+    cc_lib = _cc_library(ctx, result)
     return [
         DefaultInfo(files = cc_lib.outs),
         cc_lib.cc_info,
@@ -219,9 +195,6 @@ flex_cc_library = rule(
         CcInfo,
         DefaultInfo,
     ],
-    toolchains = [
-        _m4_common.TOOLCHAIN_TYPE,
-        flex_common.TOOLCHAIN_TYPE,
-    ],
+    toolchains = _FLEX_RULE_TOOLCHAINS,
     fragments = ["cpp"],
 )

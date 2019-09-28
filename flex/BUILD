@@ -6,6 +6,6 @@ toolchain_type(
 )
 
 flex_toolchain_alias(
-    name = "toolchain",
+    name = "current_flex_toolchain",
     visibility = ["//visibility:public"],
 )

@@ -58,8 +58,15 @@ cc_library(
 """
 
 _FLEX_BIN_BUILD = """
+filegroup(
+    name = "flex_runfiles",
+    srcs = [
+        "@rules_m4//m4:current_m4_toolchain",
+    ],
+)
 cc_binary(
     name = "flex",
+    data = [":flex_runfiles"],
     visibility = ["//visibility:public"],
     deps = ["//:flex_lib"],
 )
