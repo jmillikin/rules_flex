@@ -1,4 +1,5 @@
 load("@rules_flex//flex:flex.bzl", "flex_cc_library")
+load("@rules_flex//flex/internal:versions.bzl", "VERSION_URLS")
 
 cc_library(
     name = "hello_common",
@@ -62,4 +63,9 @@ cc_binary(
         ":hello_common",
         "@rules_flex//flex:current_flex_toolchain",
     ],
+)
+
+filegroup(
+    name = "all_versions",
+    srcs = ["@flex_v{}//bin:flex".format(version) for version in VERSION_URLS],
 )
