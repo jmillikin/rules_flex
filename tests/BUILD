@@ -66,6 +66,27 @@ cc_binary(
 )
 
 filegroup(
+    name = "testdata",
+    srcs = [
+        ":genrule_flex_cc",
+        ":genrule_test",
+        ":hello_c_bin",
+        ":hello_cc_bin",
+    ],
+)
+
+cc_test(
+    name = "flex_test",
+    srcs = ["flex_test.cc"],
+    data = [":testdata"],
+    deps = [
+        "@bazel_tools//tools/cpp/runfiles",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+filegroup(
     name = "all_versions",
     srcs = ["@flex_v{}//bin:flex".format(version) for version in VERSION_URLS],
 )
