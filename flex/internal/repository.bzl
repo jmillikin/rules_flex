@@ -85,6 +85,12 @@ def _flex_repository(ctx):
         stripPrefix = "flex-{}".format(version),
     )
 
+    # Fix build errors in older Flex due to use of undeclared functions.
+    if version in ["2.5.36", "2.5.37"]:
+        ctx.template("flexdef.h", "flexdef.h", substitutions = {
+            "extern void lerrsf": "extern void lerrsf_fatal(const char *msg, const char arg[]);\nextern void lerrsf"
+        }, executable = False)
+
     ctx.file("WORKSPACE", "workspace(name = {name})\n".format(name = repr(ctx.name)))
     ctx.file("BUILD.bazel", _FLEX_BUILD.format(
         VERSION = version,
