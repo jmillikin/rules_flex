@@ -30,11 +30,13 @@ filegroup(
 FLEX_SRCS_v25 = glob(
     ["*.c", "*.h"],
     exclude = ["lib*.c"],
+    allow_empty = True,
 )
 
 FLEX_SRCS_v26 = glob(
     ["src/*.c", "src/*.h"],
     exclude = ["src/lib*.c"],
+    allow_empty = True,
 )
 
 cc_library(
