@@ -15,7 +15,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 _GITHUB_MIRRORS = [
-    "https://mirror.bazel.build/github.com/westes/flex/releases/download/",
     "https://github.com/westes/flex/releases/download/",
 ]
 
@@ -23,7 +22,6 @@ def _github_urls(filename):
     return [m + filename for m in _GITHUB_MIRRORS]
 
 _SOURCEFORGE_MIRRORS = [
-    "https://mirror.bazel.build/sourceforge.net/projects/flex/files/",
     "https://sourceforge.net/projects/flex/files/",
 ]
 
