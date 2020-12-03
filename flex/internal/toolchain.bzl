@@ -18,6 +18,7 @@ load("@rules_m4//m4:m4.bzl", "M4_TOOLCHAIN_TYPE", "m4_toolchain")
 
 FLEX_TOOLCHAIN_TYPE = "@rules_flex//flex:toolchain_type"
 
+# buildifier: disable=provider-params
 FlexToolchainInfo = provider(fields = ["all_files", "flex_tool", "flex_env", "flex_lexer_h"])
 
 def _template_vars(toolchain):

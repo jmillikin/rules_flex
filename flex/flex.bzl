@@ -25,6 +25,7 @@ flex_repository = _flex_repository
 def flex_toolchain(ctx):
     return ctx.toolchains[FLEX_TOOLCHAIN_TYPE].flex_toolchain
 
+# buildifier: disable=unnamed-macro
 def flex_register_toolchains(version = DEFAULT_VERSION):
     check_version(version)
     repo_name = "flex_v{}".format(version)
