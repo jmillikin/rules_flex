@@ -1,0 +1,60 @@
+name: "Tests"
+on: ["push", "pull_request"]
+
+jobs:
+  tests:
+    name: "Bazel ${{ matrix.bazel.series }}"
+    runs-on: "${{ matrix.os }}"
+
+    strategy:
+      matrix:
+        os: ["ubuntu-20.04"]
+        bazel:
+          - series: "1.0"
+            version: "1.0.1"
+          - series: "2.0"
+            version: "2.0.1"
+          - series: "3.0"
+            version: "3.0.0"
+          - series: "3.7"
+            version: "3.7.1"
+
+    steps:
+      - uses: "actions/checkout@v2"
+        with:
+          path: "src"
+      - uses: "actions/cache@v2"
+        with:
+          path: "cache"
+          key: "os=${{ matrix.os }};bazel=${{ matrix.bazel.version }};v=1"
+      - name: "Prepare workspace"
+        run: |
+          echo '#!/bin/bash' > entrypoint.sh
+          echo 'cd "${GITHUB_WORKSPACE}"/src' >> entrypoint.sh
+          echo 'exec bazel "$@"' >> entrypoint.sh
+          chmod +x entrypoint.sh
+
+          mkdir -p cache
+          curl -L -o "cache/bazel-${BAZEL_VERSION}-linux-x86_64" "https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-linux-x86_64"
+          chmod +x "cache/bazel-${BAZEL_VERSION}-linux-x86_64"
+          mkdir src/tools
+          ln -s "../../cache/bazel-${BAZEL_VERSION}-linux-x86_64" src/tools/bazel
+        env:
+          BAZEL_VERSION: ${{ matrix.bazel.version }}
+      - name: "bazel test //..."
+        uses: "docker://l.gcr.io/google/bazel:1.0.0"
+        with:
+          entrypoint: "/github/workspace/entrypoint.sh"
+          args:
+            test
+              --announce_rc
+              --curses=no
+              --color=yes
+              --verbose_failures
+              --test_output=errors
+              --test_verbose_timeout_warnings
+              --incompatible_strict_action_env
+              --repository_cache=/github/workspace/cache/repository_cache
+              --disk_cache=/github/workspace/cache/disk_cache
+              --
+              //...
