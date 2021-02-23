@@ -26,13 +26,14 @@ def flex_toolchain(ctx):
     return ctx.toolchains[FLEX_TOOLCHAIN_TYPE].flex_toolchain
 
 # buildifier: disable=unnamed-macro
-def flex_register_toolchains(version = DEFAULT_VERSION):
+def flex_register_toolchains(version = DEFAULT_VERSION, extra_copts = []):
     check_version(version)
     repo_name = "flex_v{}".format(version)
     if repo_name not in native.existing_rules().keys():
         flex_repository(
             name = repo_name,
             version = version,
+            extra_copts = extra_copts,
         )
     native.register_toolchains("@rules_flex//flex/toolchains:v{}".format(version))
 

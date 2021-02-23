@@ -53,7 +53,7 @@ cc_library(
         "-DSTDC_HEADERS",
         '-DVERSION="{VERSION}"',
         '-DM4="/bin/false"',
-    ],
+    ] + {EXTRA_COPTS},
     features = ["no_copts_tokenization"],
     visibility = ["//bin:__pkg__"],
 )
@@ -76,6 +76,8 @@ cc_binary(
 
 def _flex_repository(ctx):
     version = ctx.attr.version
+    extra_copts = ctx.attr.extra_copts
+
     _check_version(version)
     source = _VERSION_URLS[version]
 
@@ -94,6 +96,7 @@ def _flex_repository(ctx):
     ctx.file("WORKSPACE", "workspace(name = {name})\n".format(name = repr(ctx.name)))
     ctx.file("BUILD.bazel", _FLEX_BUILD.format(
         VERSION = version,
+        EXTRA_COPTS = extra_copts,
     ))
     ctx.file("bin/BUILD.bazel", _FLEX_BIN_BUILD)
 
@@ -101,5 +104,6 @@ flex_repository = repository_rule(
     _flex_repository,
     attrs = {
         "version": attr.string(mandatory = True),
+        "extra_copts": attr.string_list(),
     },
 )
