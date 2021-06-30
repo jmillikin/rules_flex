@@ -1,8 +1,7 @@
 ---
 validate_config: 1
-bazel: 3.7.1
 buildifier:
-  version: 3.5.0
+  version: 4.0.1
   warnings: "-module-docstring,-function-docstring,-bzl-visibility"
 tasks:
   ubuntu_1804_gcc:
