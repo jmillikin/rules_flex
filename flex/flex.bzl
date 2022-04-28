@@ -150,6 +150,8 @@ def _cc_library(ctx, flex_result):
         private_hdrs = cc_private_hdrs,
         system_includes = cc_system_includes,
         compilation_contexts = [cc_deps.compilation_context],
+        include_prefix = ctx.attr.include_prefix,
+        strip_include_prefix = ctx.attr.strip_include_prefix,
     )
 
     (cc_linking_context, cc_linking_outputs) = cc_common.create_linking_context_from_compilation_outputs(
@@ -189,6 +191,8 @@ flex_cc_library = rule(
         "deps": attr.label_list(
             providers = [CcInfo],
         ),
+        "include_prefix": attr.string(),
+        "strip_include_prefix": attr.string(),
         "_cc_toolchain": attr.label(
             default = "@bazel_tools//tools/cpp:current_cc_toolchain",
         ),
