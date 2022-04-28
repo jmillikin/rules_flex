@@ -140,6 +140,12 @@ def _cc_library(ctx, flex_result):
         requested_features = ctx.attr.features,
     )
 
+    compile_kwargs = {}
+    if ctx.attr.include_prefix:
+        compile_kwargs["include_prefix"] = ctx.attr.include_prefix
+    if ctx.attr.strip_include_prefix:
+        compile_kwargs["strip_include_prefix"] = ctx.attr.strip_include_prefix
+
     (cc_compilation_context, cc_compilation_outputs) = cc_common.compile(
         name = ctx.attr.name,
         actions = ctx.actions,
@@ -150,8 +156,7 @@ def _cc_library(ctx, flex_result):
         private_hdrs = cc_private_hdrs,
         system_includes = cc_system_includes,
         compilation_contexts = [cc_deps.compilation_context],
-        include_prefix = ctx.attr.include_prefix,
-        strip_include_prefix = ctx.attr.strip_include_prefix,
+        **compile_kwargs
     )
 
     (cc_linking_context, cc_linking_outputs) = cc_common.create_linking_context_from_compilation_outputs(
