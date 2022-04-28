@@ -89,4 +89,5 @@ cc_test(
 filegroup(
     name = "all_versions",
     srcs = ["@flex_v{}//bin:flex".format(version) for version in VERSION_URLS],
+    tags = ["manual"],
 )
