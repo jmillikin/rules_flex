@@ -14,11 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load(
-    "@rules_flex//flex/internal:versions.bzl",
-    _VERSION_URLS = "VERSION_URLS",
-    _check_version = "check_version",
-)
+load("//flex/internal:versions.bzl", "VERSION_URLS")
 
 _FLEX_BUILD = """
 filegroup(
@@ -76,10 +72,7 @@ cc_binary(
 
 def _flex_repository(ctx):
     version = ctx.attr.version
-    extra_copts = ctx.attr.extra_copts
-
-    _check_version(version)
-    source = _VERSION_URLS[version]
+    source = VERSION_URLS[version]
 
     ctx.download_and_extract(
         url = source["urls"],
@@ -93,17 +86,22 @@ def _flex_repository(ctx):
             "extern void lerrsf": "extern void lerrsf_fatal(const char *msg, const char arg[]);\nextern void lerrsf",
         }, executable = False)
 
-    ctx.file("WORKSPACE", "workspace(name = {name})\n".format(name = repr(ctx.name)))
+    ctx.file("WORKSPACE", "workspace(name = {name})\n".format(
+        name = repr(ctx.name),
+    ))
     ctx.file("BUILD.bazel", _FLEX_BUILD.format(
         VERSION = version,
-        EXTRA_COPTS = extra_copts,
+        EXTRA_COPTS = ctx.attr.extra_copts,
     ))
     ctx.file("bin/BUILD.bazel", _FLEX_BIN_BUILD)
 
 flex_repository = repository_rule(
-    _flex_repository,
+    implementation = _flex_repository,
     attrs = {
-        "version": attr.string(mandatory = True),
+        "version": attr.string(
+            mandatory = True,
+            values = sorted(VERSION_URLS),
+        ),
         "extra_copts": attr.string_list(),
     },
 )

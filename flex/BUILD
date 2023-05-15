@@ -1,4 +1,4 @@
-load("@rules_flex//flex/internal:toolchain.bzl", "flex_toolchain_alias")
+load("//flex/internal:toolchain_alias.bzl", "flex_toolchain_alias")
 
 toolchain_type(
     name = "toolchain_type",

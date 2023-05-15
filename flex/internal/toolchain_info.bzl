@@ -14,12 +14,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@rules_m4//m4:m4.bzl", "M4_TOOLCHAIN_TYPE", "m4_toolchain")
+load("//flex:providers.bzl", "FlexToolchainInfo")
 
-FLEX_TOOLCHAIN_TYPE = "@rules_flex//flex:toolchain_type"
-
-# buildifier: disable=provider-params
-FlexToolchainInfo = provider(fields = ["all_files", "flex_tool", "flex_env", "flex_lexer_h"])
+_M4_TOOLCHAIN_TYPE = "@rules_m4//m4:toolchain_type"
 
 def _template_vars(toolchain):
     return platform_common.TemplateVariableInfo({
@@ -27,7 +24,7 @@ def _template_vars(toolchain):
     })
 
 def _flex_toolchain_info(ctx):
-    m4 = m4_toolchain(ctx)
+    m4 = ctx.toolchains[_M4_TOOLCHAIN_TYPE].m4_toolchain
     flex_runfiles = ctx.attr.flex_tool[DefaultInfo].default_runfiles.files
 
     flex_env = dict(m4.m4_env)
@@ -73,29 +70,5 @@ flex_toolchain_info = rule(
         platform_common.ToolchainInfo,
         platform_common.TemplateVariableInfo,
     ],
-    toolchains = [M4_TOOLCHAIN_TYPE],
-)
-
-def _flex_toolchain_alias(ctx):
-    toolchain = ctx.toolchains[FLEX_TOOLCHAIN_TYPE].flex_toolchain
-    flex_lexer_h = toolchain.flex_lexer_h
-    return [
-        DefaultInfo(files = toolchain.all_files),
-        _template_vars(toolchain),
-        CcInfo(
-            compilation_context = cc_common.create_compilation_context(
-                headers = depset(direct = [flex_lexer_h]),
-                system_includes = depset(direct = [flex_lexer_h.dirname]),
-            ),
-        ),
-    ]
-
-flex_toolchain_alias = rule(
-    _flex_toolchain_alias,
-    toolchains = [FLEX_TOOLCHAIN_TYPE],
-    provides = [
-        DefaultInfo,
-        CcInfo,
-        platform_common.TemplateVariableInfo,
-    ],
+    toolchains = [_M4_TOOLCHAIN_TYPE],
 )

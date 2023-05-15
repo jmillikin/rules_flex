@@ -1,5 +1,5 @@
-load("@rules_flex//flex/internal:versions.bzl", "VERSION_URLS")
-load("@rules_flex//flex/internal:toolchain.bzl", "flex_toolchain_info")
+load("//flex/internal:toolchain_info.bzl", "flex_toolchain_info")
+load("//flex/internal:versions.bzl", "VERSION_URLS")
 
 [flex_toolchain_info(
     name = "toolchain_v{}".format(version),

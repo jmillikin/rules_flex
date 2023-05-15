@@ -1,5 +1,5 @@
-load("@rules_flex//flex:flex.bzl", "flex_cc_library")
-load("@rules_flex//flex/internal:versions.bzl", "VERSION_URLS")
+load("//flex:flex.bzl", "flex_cc_library")
+load("//flex/internal:versions.bzl", "VERSION_URLS")
 
 cc_library(
     name = "hello_common",
@@ -13,7 +13,7 @@ genrule(
     outs = ["genrule_output.c"],
     cmd = "M4=$(M4) $(FLEX) --outfile=$@ $(location hello_c.l)",
     toolchains = [
-        "@rules_flex//flex:current_flex_toolchain",
+        "//flex:current_flex_toolchain",
         "@rules_m4//m4:current_m4_toolchain",
     ],
 )
@@ -48,7 +48,7 @@ genrule(
     outs = ["genrule_flex_cc.cc"],
     cmd = "M4=$(M4) $(FLEX) --outfile=$@ --c++ $(location hello_cc.ll)",
     toolchains = [
-        "@rules_flex//flex:current_flex_toolchain",
+        "//flex:current_flex_toolchain",
         "@rules_m4//m4:current_m4_toolchain",
     ],
 )
@@ -61,7 +61,7 @@ cc_binary(
     ],
     deps = [
         ":hello_common",
-        "@rules_flex//flex:current_flex_toolchain",
+        "//flex:current_flex_toolchain",
     ],
 )
 
