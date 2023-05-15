@@ -10,10 +10,14 @@ jobs:
       matrix:
         os: ["ubuntu-20.04"]
         bazel:
-          - series: "1.0"
-            version: "1.0.1"
-          - series: "2.0"
-            version: "2.0.1"
+          # Disabled until rules_m4 is fixed to work with older Bazels.
+          #
+          # https://github.com/jmillikin/rules_m4/issues/16
+          #
+          # - series: "1.0"
+          #   version: "1.0.1"
+          # - series: "2.0"
+          #   version: "2.0.1"
           - series: "3.0"
             version: "3.0.0"
           - series: "3.7"
