@@ -14,6 +14,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""Supported versions of Flex."""
+
 _GITHUB_MIRRORS = [
     "https://github.com/westes/flex/releases/download/",
 ]

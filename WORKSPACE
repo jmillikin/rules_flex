@@ -12,8 +12,10 @@ load("@rules_m4//m4:m4.bzl", "m4_register_toolchains")
 
 m4_register_toolchains()
 
-load("@rules_flex//flex:flex.bzl", "flex_register_toolchains", "flex_repository")
-load("@rules_flex//flex/internal:versions.bzl", "VERSION_URLS")
+load("//flex:flex.bzl", "flex_register_toolchains", "flex_repository")
+
+# buildifier: disable=bzl-visibility
+load("//flex/internal:versions.bzl", "VERSION_URLS")
 
 flex_register_toolchains()
 

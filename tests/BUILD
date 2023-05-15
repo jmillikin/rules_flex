@@ -1,4 +1,6 @@
 load("//flex:flex.bzl", "flex_cc_library")
+
+# buildifier: disable=bzl-visibility
 load("//flex/internal:versions.bzl", "VERSION_URLS")
 
 cc_library(

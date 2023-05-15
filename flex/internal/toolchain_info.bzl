@@ -14,6 +14,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""Bazel toolchain for Flex."""
+
 load("//flex:providers.bzl", "FlexToolchainInfo")
 
 _M4_TOOLCHAIN_TYPE = "@rules_m4//m4:toolchain_type"

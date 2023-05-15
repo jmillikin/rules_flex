@@ -14,6 +14,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""Definition of the `flex_repository` repository rule."""
+
 load("//flex/internal:versions.bzl", "VERSION_URLS")
 
 _FLEX_BUILD = """

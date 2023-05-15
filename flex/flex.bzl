@@ -14,6 +14,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""Bazel rules for Flex, the Fast Lexical Analyzer."""
+
 load(
     "//flex:providers.bzl",
     _FlexToolchainInfo = "FlexToolchainInfo",
@@ -50,6 +52,15 @@ FlexToolchainInfo = _FlexToolchainInfo
 
 # buildifier: disable=unnamed-macro
 def flex_register_toolchains(version = DEFAULT_VERSION, extra_copts = []):
+    """A helper function for Flex toolchains registration.
+
+    This workspace macro will create a [`flex_repository`](#flex_repository)
+    named `flex_v{version}` and register it as a Bazel toolchain.
+
+    Args:
+        version: A supported version of Flex.
+        extra_copts: Additional C compiler options to use when building Flex.
+    """
     check_version(version)
     repo_name = "flex_v{}".format(version)
     if repo_name not in native.existing_rules().keys():

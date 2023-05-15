@@ -19,4 +19,13 @@
 FLEX_TOOLCHAIN_TYPE = "@rules_flex//flex:toolchain_type"
 
 def flex_toolchain(ctx):
+    """Returns the current [`FlexToolchainInfo`](#FlexToolchainInfo).
+
+    Args:
+        ctx: A rule context, where the rule has a toolchain dependency
+          on [`FLEX_TOOLCHAIN_TYPE`](#FLEX_TOOLCHAIN_TYPE).
+
+    Returns:
+        A [`FlexToolchainInfo`](#FlexToolchainInfo).
+    """
     return ctx.toolchains[FLEX_TOOLCHAIN_TYPE].flex_toolchain
