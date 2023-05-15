@@ -42,12 +42,17 @@ load(
     "//flex/rules:flex_repository.bzl",
     _flex_repository = "flex_repository",
 )
+load(
+    "//flex/rules:flex_toolchain_repository.bzl",
+    _flex_toolchain_repository = "flex_toolchain_repository",
+)
 
 FLEX_TOOLCHAIN_TYPE = _FLEX_TOOLCHAIN_TYPE
 flex = _flex
 flex_cc_library = _flex_cc_library
 flex_toolchain = _flex_toolchain
 flex_repository = _flex_repository
+flex_toolchain_repository = _flex_toolchain_repository
 FlexToolchainInfo = _FlexToolchainInfo
 
 # buildifier: disable=unnamed-macro

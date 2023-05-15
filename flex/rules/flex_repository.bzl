@@ -22,7 +22,7 @@ _FLEX_BUILD = """
 filegroup(
     name = "flex_lexer_h",
     srcs = ["src/FlexLexer.h"],
-    visibility = ["@rules_flex//flex/internal:__pkg__"],
+    visibility = ["//:__subpackages__"],
 )
 
 FLEX_SRCS_v25 = glob(
@@ -72,6 +72,17 @@ cc_binary(
 )
 """
 
+_RULES_FLEX_INTERNAL_BUILD = """
+load("@rules_flex//flex/internal:toolchain_info.bzl", "flex_toolchain_info")
+
+flex_toolchain_info(
+    name = "toolchain_info",
+    flex_tool = "//bin:flex",
+    flex_lexer_h = "//:flex_lexer_h",
+    visibility = ["//visibility:public"],
+)
+"""
+
 def _flex_repository(ctx):
     version = ctx.attr.version
     source = VERSION_URLS[version]
@@ -96,6 +107,7 @@ def _flex_repository(ctx):
         EXTRA_COPTS = ctx.attr.extra_copts,
     ))
     ctx.file("bin/BUILD.bazel", _FLEX_BIN_BUILD)
+    ctx.file("rules_flex_internal/BUILD.bazel", _RULES_FLEX_INTERNAL_BUILD)
 
 flex_repository = repository_rule(
     implementation = _flex_repository,
