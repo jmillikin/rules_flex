@@ -1,8 +1,5 @@
 load("//flex:flex.bzl", "flex_cc_library")
 
-# buildifier: disable=bzl-visibility
-load("//flex/internal:versions.bzl", "VERSION_URLS")
-
 cc_library(
     name = "hello_common",
     srcs = ["hello_common.c"],
@@ -88,8 +85,8 @@ cc_test(
     ],
 )
 
-filegroup(
+alias(
     name = "all_versions",
-    srcs = ["@flex_v{}//bin:flex".format(version) for version in VERSION_URLS],
+    actual = "@rules_flex_testutil//:all_versions",
     tags = ["manual"],
 )

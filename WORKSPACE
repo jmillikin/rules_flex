@@ -15,7 +15,12 @@ m4_register_toolchains()
 load("//flex:flex.bzl", "flex_register_toolchains", "flex_repository")
 
 # buildifier: disable=bzl-visibility
+load("//flex/internal:testutil.bzl", "rules_flex_testutil")
+
+# buildifier: disable=bzl-visibility
 load("//flex/internal:versions.bzl", "VERSION_URLS")
+
+rules_flex_testutil(name = "rules_flex_testutil")
 
 flex_register_toolchains()
 
