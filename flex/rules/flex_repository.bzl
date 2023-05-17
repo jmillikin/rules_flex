@@ -111,11 +111,30 @@ def _flex_repository(ctx):
 
 flex_repository = repository_rule(
     implementation = _flex_repository,
+    doc = """
+Repository rule for Flex.
+
+The resulting repository will have a `//bin:flex` executable target.
+
+### Example
+
+```starlark
+load("@rules_flex//flex:flex.bzl", "flex_repository")
+
+flex_repository(
+    name = "flex_v2.6.4",
+    version = "2.6.4",
+)
+```
+""",
     attrs = {
         "version": attr.string(
+            doc = "A supported version of Flex.",
             mandatory = True,
             values = sorted(VERSION_URLS),
         ),
-        "extra_copts": attr.string_list(),
+        "extra_copts": attr.string_list(
+            doc = "Additional C compiler options to use when building Flex.",
+        ),
     },
 )

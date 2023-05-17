@@ -1,52 +1,77 @@
 # Bazel build rules for Flex
 
-## Overview
+This Bazel ruleset allows [Flex] to be integrated into a Bazel build. It can
+be used to generate lexical analyzers ("lexers") in C or C++.
+
+API reference: [docs/rules_flex.md](docs/rules_flex.md)
+
+[Flex]: https://github.com/westes/flex
+
+## Setup (workspace)
+
+### As a workspace dependency
 
 ```python
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 http_archive(
     name = "rules_m4",
-    urls = ["https://github.com/jmillikin/rules_m4/releases/download/v0.2/rules_m4-v0.2.tar.xz"],
-    sha256 = "c67fa9891bb19e9e6c1050003ba648d35383b8cb3c9572f397ad24040fb7f0eb",
+    sha256 = "10ce41f150ccfbfddc9d2394ee680eb984dc8a3dfea613afd013cfb22ea7445c",
+    urls = ["https://github.com/jmillikin/rules_m4/releases/download/v0.2.3/rules_m4-v0.2.3.tar.xz"],
 )
+
 load("@rules_m4//m4:m4.bzl", "m4_register_toolchains")
-m4_register_toolchains()
+
+m4_register_toolchains(version = "1.4.18")
 
 http_archive(
     name = "rules_flex",
+    # Obtain the package checksum from the release page:
+    # https://github.com/jmillikin/rules_flex/releases/tag/v0.2
+    sha256 = "",
     urls = ["https://github.com/jmillikin/rules_flex/releases/download/v0.2/rules_flex-v0.2.tar.xz"],
-    sha256 = "f1685512937c2e33a7ebc4d5c6cf38ed282c2ce3b7a9c7c0b542db7e5db59d52",
 )
+
 load("@rules_flex//flex:flex.bzl", "flex_register_toolchains")
-flex_register_toolchains()
+
+flex_register_toolchains(version = "2.6.4)
 ```
+
+## Examples
+
+Integrating Flex into a C/C++ dependency graph:
 
 ```python
 load("@rules_flex//flex:flex.bzl", "flex_cc_library")
+
 flex_cc_library(
     name = "hello",
     src = "hello.l",
 )
+
 cc_binary(
     name = "hello_bin",
     deps = [":hello"],
 )
 ```
 
-## Other Rules
+Generating `.c` / `.h` / `.cc` source files (not as a `CcInfo`):
 
 ```python
 load("@rules_flex//flex:flex.bzl", "flex")
+
 flex(
     name = "hello_bin_srcs",
     src = "hello.l",
 )
+
 cc_binary(
     name = "hello_bin",
     srcs = [":hello_bin_srcs"],
 )
 ```
+
+Running Flex in a `genrule`:
 
 ```python
 genrule(
@@ -61,7 +86,7 @@ genrule(
 )
 ```
 
-## Toolchains
+Writing a custom rule that depends on Flex as a toolchain:
 
 ```python
 load("@rules_flex//flex:flex.bzl", "FLEX_TOOLCHAIN_TYPE", "flex_toolchain")
@@ -76,7 +101,7 @@ def _my_rule(ctx):
     )
 
 my_rule = rule(
-    _my_rule,
+    implementation = _my_rule,
     toolchains = [
         FLEX_TOOLCHAIN_TYPE,
         M4_TOOLCHAIN_TYPE,

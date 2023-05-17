@@ -29,6 +29,23 @@ def _flex(ctx):
 
 flex = rule(
     implementation = _flex,
+    doc = """Generate C/C++ source code for a Flex lexical analyzer.
+
+This rule exists for special cases where the build needs to perform further
+modification of the generated `.c` / `.h` before compilation. Most users
+will find the [`flex_cc_library`](#flex_cc_library) rule more convenient.
+
+### Example
+
+```starlark
+load("@rules_flex//flex:flex.bzl", "flex")
+
+flex(
+    name = "hello",
+    src = "hello.l",
+)
+```
+""",
     attrs = flex_action_attrs({}),
     toolchains = FLEX_ACTION_TOOLCHAINS,
 )

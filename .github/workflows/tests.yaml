@@ -41,7 +41,7 @@ jobs:
           mkdir -p cache
           curl -L -o "cache/bazel-${BAZEL_VERSION}-linux-x86_64" "https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-linux-x86_64"
           chmod +x "cache/bazel-${BAZEL_VERSION}-linux-x86_64"
-          mkdir src/tools
+          mkdir -p src/tools
           ln -s "../../cache/bazel-${BAZEL_VERSION}-linux-x86_64" src/tools/bazel
         env:
           BAZEL_VERSION: ${{ matrix.bazel.version }}

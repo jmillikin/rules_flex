@@ -31,10 +31,27 @@ FLEX_ACTION_TOOLCHAINS = [
 
 _FLEX_ACTION_ATTRS = {
     "src": attr.label(
+        doc = """A Flex source file.
+
+The source's file extension will determine whether Flex operates in C or C++
+mode:
+  - Inputs with file extension `.l` generate outputs `{name}.c` and `{name}.h`.
+  - Inputs with file extension `.ll`, `.l++`, `.lxx`, or `.lpp` generate output
+    `{name}.cc`. This is equivalent to invoking Flex as `flex++`.
+
+The C++ output depends on `FlexLexer.h`, which is part of the Flex source
+distribution and may be obtained from the Flex toolchain.
+""",
         mandatory = True,
         allow_single_file = [".l", ".ll", ".l++", ".lxx", ".lpp"],
     ),
-    "flex_options": attr.string_list(),
+    "flex_options": attr.string_list(
+        doc = """
+Additional options to pass to the `flex` command.
+
+These will be added to the command args immediately before the source file.
+""",
+    ),
     "_m4_deny_shell": attr.label(
         executable = True,
         cfg = "host",
