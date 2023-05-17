@@ -9,6 +9,37 @@ API reference: [docs/rules_flex.md](docs/rules_flex.md)
 
 ## Setup (workspace)
 
+### As a module dependency (bzlmod)
+
+Add the following to your `MODULE.bazel`:
+
+```python
+bazel_dep(name = "rules_flex", version = "0.2")
+```
+
+To specify a version or build with additional C compiler options, use the
+`flex_repository_ext` module extension:
+
+```python
+flex = use_extension(
+    "@rules_flex//flex/extensions:flex_repository_ext.bzl",
+    "flex_repository_ext",
+)
+flex.repository(
+    name = "flex",
+    version = "2.6.4",
+    extra_copts = ["-O3"],
+)
+use_repo(flex, "flex")
+register_toolchains("@flex//:toolchain")
+```
+
+Note that repository names registered with a given bzlmod module extension must
+be unique within the scope of that extension. See the [Bazel module extensions]
+documentation for more details.
+
+[Bazel module extensions]: https://bazel.build/external/extension
+
 ### As a workspace dependency
 
 ```python
