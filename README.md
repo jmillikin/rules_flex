@@ -14,7 +14,7 @@ API reference: [docs/rules_flex.md](docs/rules_flex.md)
 Add the following to your `MODULE.bazel`:
 
 ```python
-bazel_dep(name = "rules_flex", version = "0.2")
+bazel_dep(name = "rules_flex", version = "0.2.1")
 ```
 
 To specify a version or build with additional C compiler options, use the
@@ -58,9 +58,9 @@ m4_register_toolchains(version = "1.4.18")
 http_archive(
     name = "rules_flex",
     # Obtain the package checksum from the release page:
-    # https://github.com/jmillikin/rules_flex/releases/tag/v0.2
+    # https://github.com/jmillikin/rules_flex/releases/tag/v0.2.1
     sha256 = "",
-    urls = ["https://github.com/jmillikin/rules_flex/releases/download/v0.2/rules_flex-v0.2.tar.xz"],
+    urls = ["https://github.com/jmillikin/rules_flex/releases/download/v0.2.1/rules_flex-v0.2.1.tar.xz"],
 )
 
 load("@rules_flex//flex:flex.bzl", "flex_register_toolchains")
