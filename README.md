@@ -65,7 +65,7 @@ http_archive(
 
 load("@rules_flex//flex:flex.bzl", "flex_register_toolchains")
 
-flex_register_toolchains(version = "2.6.4)
+flex_register_toolchains(version = "2.6.4")
 ```
 
 ## Examples
