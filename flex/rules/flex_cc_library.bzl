@@ -45,7 +45,7 @@ def _cc_library(ctx, flex_result):
     cc_feature_configuration = cc_common.configure_features(
         ctx = ctx,
         cc_toolchain = cc_toolchain,
-        requested_features = ctx.attr.features,
+        requested_features = ctx.features,
     )
 
     compile_kwargs = {}
