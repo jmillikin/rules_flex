@@ -43,6 +43,8 @@ jobs:
           chmod +x "cache/bazel-${BAZEL_VERSION}-linux-x86_64"
           mkdir -p src/tools
           ln -s "../../cache/bazel-${BAZEL_VERSION}-linux-x86_64" src/tools/bazel
+
+          echo 'tools/stardoc' > src/.bazelignore
         env:
           BAZEL_VERSION: ${{ matrix.bazel.version }}
       - name: "bazel test //..."

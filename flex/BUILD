@@ -1,9 +1,14 @@
 load("//flex/internal:toolchain_alias.bzl", "flex_toolchain_alias")
 
 filegroup(
+    name = "flex_bzl",
+    srcs = ["flex.bzl"],
+    visibility = ["//:__subpackages__"],
+)
+
+filegroup(
     name = "bzl_srcs",
     srcs = glob(["*.bzl"]) + [
-        "//flex/extensions:bzl_srcs",
         "//flex/internal:bzl_srcs",
         "//flex/rules:bzl_srcs",
     ],
