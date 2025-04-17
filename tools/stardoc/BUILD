@@ -1,11 +1,27 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@io_bazel_stardoc//stardoc:stardoc.bzl", "stardoc")
+
+# TODO: Required due to https://github.com/bazelbuild/rules_cc/issues/279
+bzl_library(
+    name = "rules_cc_bzl_lib",
+    srcs = ["@rules_cc//cc:bzl_srcs"],
+    deps = [
+        "@rules_cc//cc/common",
+    ],
+)
+
+bzl_library(
+    name = "bzl_lib",
+    srcs = ["//flex:bzl_srcs"],
+    deps = [":rules_cc_bzl_lib"],
+)
 
 stardoc(
     name = "flex_md",
     out = "flex.md",
     header_template = ":header.vm",
     input = "//flex:flex_bzl",
-    deps = ["//flex:bzl_srcs"],
+    deps = [":bzl_lib"],
 )
 
 stardoc(
@@ -13,7 +29,7 @@ stardoc(
     out = "flex_repository_ext.md",
     header_template = ":empty.vm",
     input = "//flex/extensions:flex_repository_ext_bzl",
-    deps = ["//flex:bzl_srcs"],
+    deps = [":bzl_lib"],
 )
 
 # https://github.com/bazelbuild/stardoc/issues/78

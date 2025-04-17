@@ -16,6 +16,8 @@
 
 """Shim rule for using Flex in a genrule or cc_library."""
 
+load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load(
     "//flex:toolchain_type.bzl",
     "FLEX_TOOLCHAIN_TYPE",

@@ -16,6 +16,8 @@
 
 """Definition of the `flex_cc_library` build rule."""
 
+load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("//flex:toolchain_type.bzl", "flex_toolchain")
 load(
     "//flex/internal:flex_action.bzl",
