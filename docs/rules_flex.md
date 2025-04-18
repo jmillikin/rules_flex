@@ -20,6 +20,9 @@ This rule exists for special cases where the build needs to perform further
 modification of the generated `.c` / `.h` before compilation. Most users
 will find the [`flex_cc_library`](#flex_cc_library) rule more convenient.
 
+The output groups `cc_srcs` and `cc_hdrs` provide access to the generated
+`{name}.c` / `{name}.cc` sources and (if available) the `{name}.h` header.
+
 ### Example
 
 ```starlark

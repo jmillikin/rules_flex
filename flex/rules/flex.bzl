@@ -25,7 +25,16 @@ load(
 
 def _flex(ctx):
     result = flex_action(ctx)
-    return DefaultInfo(files = result.outs)
+    hdrs = []
+    if result.header:
+        hdrs = [result.header]
+    return [
+        DefaultInfo(files = result.outs),
+        OutputGroupInfo(
+            cc_srcs = depset(direct = [result.source]),
+            cc_hdrs = depset(direct = hdrs),
+        ),
+    ]
 
 flex = rule(
     implementation = _flex,
@@ -34,6 +43,9 @@ flex = rule(
 This rule exists for special cases where the build needs to perform further
 modification of the generated `.c` / `.h` before compilation. Most users
 will find the [`flex_cc_library`](#flex_cc_library) rule more convenient.
+
+The output groups `cc_srcs` and `cc_hdrs` provide access to the generated
+`{name}.c` / `{name}.cc` sources and (if available) the `{name}.h` header.
 
 ### Example
 
