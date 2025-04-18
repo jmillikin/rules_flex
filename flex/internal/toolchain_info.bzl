@@ -60,7 +60,7 @@ flex_toolchain_info = rule(
         "flex_tool": attr.label(
             mandatory = True,
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
         "flex_env": attr.string_dict(),
         "flex_lexer_h": attr.label(

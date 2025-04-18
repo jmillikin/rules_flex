@@ -58,7 +58,7 @@ These will be added to the command args immediately before the source file.
     ),
     "_m4_deny_shell": attr.label(
         executable = True,
-        cfg = "host",
+        cfg = "exec",
         default = Label("//flex/internal:m4_deny_shell"),
     ),
 }
