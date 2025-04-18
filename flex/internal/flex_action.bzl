@@ -33,8 +33,8 @@ _FLEX_ACTION_ATTRS = {
     "src": attr.label(
         doc = """A Flex source file.
 
-The source's file extension will determine whether Flex operates in C or C++
-mode:
+Unless `language` is set, the source's file extension will determine whether
+Flex operates in C or C++ mode:
   - Inputs with file extension `.l` generate outputs `{name}.c` and `{name}.h`.
   - Inputs with file extension `.ll`, `.l++`, `.lxx`, or `.lpp` generate output
     `{name}.cc`. This is equivalent to invoking Flex as `flex++`.
@@ -44,6 +44,10 @@ distribution and may be obtained from the Flex toolchain.
 """,
         mandatory = True,
         allow_single_file = [".l", ".ll", ".l++", ".lxx", ".lpp"],
+    ),
+    "language": attr.string(
+        doc = "Which language to generate the lexer in.",
+        values = ["c", "c++"],
     ),
     "flex_options": attr.string_list(
         doc = """
@@ -81,7 +85,13 @@ def flex_action(ctx):
     outputs = []
     header = None
 
-    if ctx.file.src.extension == "l":
+    language = ctx.attr.language
+    if language == "":
+        if ctx.file.src.extension == "l":
+            language = "c"
+        else:
+            language = "c++"
+    if language == "c":
         src_ext = "c"
 
         # The Flex manual documents that `--header-file` and `--c++` are incompatible.
