@@ -7,9 +7,7 @@ API reference: [docs/rules_flex.md](docs/rules_flex.md)
 
 [Flex]: https://github.com/westes/flex
 
-## Setup (workspace)
-
-### As a module dependency (bzlmod)
+## Setup
 
 Add the following to your `MODULE.bazel`:
 
@@ -39,34 +37,6 @@ be unique within the scope of that extension. See the [Bazel module extensions]
 documentation for more details.
 
 [Bazel module extensions]: https://bazel.build/external/extension
-
-### As a workspace dependency
-
-```python
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-
-http_archive(
-    name = "rules_m4",
-    sha256 = "49aafc0d41c9258122b10dd4e705d6d8a42830d271e99ca2d6389506d31515c6",
-    urls = ["https://github.com/jmillikin/rules_m4/releases/download/v0.2.5/rules_m4-v0.2.5.tar.xz"],
-)
-
-load("@rules_m4//m4:m4.bzl", "m4_register_toolchains")
-
-m4_register_toolchains(version = "1.4.18")
-
-http_archive(
-    name = "rules_flex",
-    # Obtain the package checksum from the release page:
-    # https://github.com/jmillikin/rules_flex/releases/tag/v0.3.2
-    sha256 = "",
-    urls = ["https://github.com/jmillikin/rules_flex/releases/download/v0.3.2/rules_flex-v0.3.2.tar.xz"],
-)
-
-load("@rules_flex//flex:flex.bzl", "flex_register_toolchains")
-
-flex_register_toolchains(version = "2.6.4")
-```
 
 ## Examples
 
