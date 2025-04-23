@@ -5,7 +5,10 @@ stardoc(
     out = "flex.md",
     header_template = ":header.vm",
     input = "//flex:flex_bzl",
-    deps = ["//flex:bzl_srcs"],
+    deps = [
+        "//flex:bzl_srcs",
+        "@rules_cc//cc/common",
+    ],
 )
 
 stardoc(

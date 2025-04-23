@@ -19,6 +19,8 @@
 load("//flex/internal:versions.bzl", "VERSION_URLS")
 
 _FLEX_BUILD = """
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
 filegroup(
     name = "flex_lexer_h",
     srcs = ["src/FlexLexer.h"],
@@ -58,6 +60,8 @@ cc_library(
 """
 
 _FLEX_BIN_BUILD = """
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+
 filegroup(
     name = "flex_runfiles",
     srcs = [
