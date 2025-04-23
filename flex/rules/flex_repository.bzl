@@ -67,6 +67,7 @@ filegroup(
 cc_binary(
     name = "flex",
     data = [":flex_runfiles"],
+    features = ["-default_link_libs"],
     linkopts = {EXTRA_LINKOPTS},
     visibility = ["//visibility:public"],
     deps = ["//:flex_lib"],
@@ -84,6 +85,34 @@ flex_toolchain_info(
 )
 """
 
+def _hardcode_int_max_log10(ctx, version):
+    # Flex uses ceil(log10(v)) to compute the buffer size needed to format
+    # integer value `v` in a few places. The build can be simplified to avoid a
+    # dependency on `libm` (separate from `libc` on some platforms) by just
+    # hardcoding a big number, on the assumption that `ceil(log10(UINT128_MAX))`
+    # should be enough forever.
+    #
+    # >>> import math
+    # >>> int('1'*128, 2)
+    # 340282366920938463463374607431768211455
+    # >>> math.ceil(math.log10(340282366920938463463374607431768211455))
+    # 39
+    INT_FORMAT_CAPACITY = "40"
+
+    main_c = "src/main.c"
+    buf_c = "src/buf.c"
+    if version.startswith("2.5."):
+        main_c = "main.c"
+        buf_c = "buf.c"
+    ctx.template(main_c, main_c, substitutions = {
+        "(int)(1 + log10(i))": INT_FORMAT_CAPACITY,
+        "(size_t)(1 + ceil (log10(i)))": INT_FORMAT_CAPACITY,
+    }, executable = False)
+    ctx.template(buf_c, buf_c, substitutions = {
+        "(int) (1 + log10 (abs (lineno)))": INT_FORMAT_CAPACITY,
+        "(size_t) (1 + ceil (log10 (abs (lineno))))": INT_FORMAT_CAPACITY,
+    }, executable = False)
+
 def _flex_repository(ctx):
     version = ctx.attr.version
     source = VERSION_URLS[version]
@@ -99,6 +128,8 @@ def _flex_repository(ctx):
         ctx.template("flexdef.h", "flexdef.h", substitutions = {
             "extern void lerrsf": "extern void lerrsf_fatal(const char *msg, const char arg[]);\nextern void lerrsf",
         }, executable = False)
+
+    _hardcode_int_max_log10(ctx, version)
 
     ctx.file("WORKSPACE", "workspace(name = {name})\n".format(
         name = repr(ctx.name),
