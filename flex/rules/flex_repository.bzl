@@ -67,6 +67,7 @@ filegroup(
 cc_binary(
     name = "flex",
     data = [":flex_runfiles"],
+    linkopts = {EXTRA_LINKOPTS},
     visibility = ["//visibility:public"],
     deps = ["//:flex_lib"],
 )
@@ -106,7 +107,9 @@ def _flex_repository(ctx):
         VERSION = version,
         EXTRA_COPTS = ctx.attr.extra_copts,
     ))
-    ctx.file("bin/BUILD.bazel", _FLEX_BIN_BUILD)
+    ctx.file("bin/BUILD.bazel", _FLEX_BIN_BUILD.format(
+        EXTRA_LINKOPTS = ctx.attr.extra_linkopts,
+    ))
     ctx.file("rules_flex_internal/BUILD.bazel", _RULES_FLEX_INTERNAL_BUILD)
 
 flex_repository = repository_rule(
@@ -135,6 +138,9 @@ flex_repository(
         ),
         "extra_copts": attr.string_list(
             doc = "Additional C compiler options to use when building Flex.",
+        ),
+        "extra_linkopts": attr.string_list(
+            doc = "Additional linker options to use when building Flex.",
         ),
     },
 )
