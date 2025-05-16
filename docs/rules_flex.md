@@ -168,7 +168,7 @@ A [`FlexToolchainInfo`](#FlexToolchainInfo).
 <pre>
 load("@rules_flex//flex:flex.bzl", "flex_repository")
 
-flex_repository(<a href="#flex_repository-name">name</a>, <a href="#flex_repository-extra_copts">extra_copts</a>, <a href="#flex_repository-extra_linkopts">extra_linkopts</a>, <a href="#flex_repository-repo_mapping">repo_mapping</a>, <a href="#flex_repository-version">version</a>)
+flex_repository(<a href="#flex_repository-name">name</a>, <a href="#flex_repository-extra_copts">extra_copts</a>, <a href="#flex_repository-extra_linkopts">extra_linkopts</a>, <a href="#flex_repository-patches">patches</a>, <a href="#flex_repository-repo_mapping">repo_mapping</a>, <a href="#flex_repository-version">version</a>)
 </pre>
 
 Repository rule for Flex.
@@ -194,6 +194,7 @@ flex_repository(
 | <a id="flex_repository-name"></a>name |  A unique name for this repository.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
 | <a id="flex_repository-extra_copts"></a>extra_copts |  Additional C compiler options to use when building Flex.   | List of strings | optional |  `[]`  |
 | <a id="flex_repository-extra_linkopts"></a>extra_linkopts |  Additional linker options to use when building Flex.   | List of strings | optional |  `[]`  |
+| <a id="flex_repository-patches"></a>patches |  A mapping from Flex versions to lists of patch files to apply, relative to the root of the Flex source repository. Each patch should be in standard [unified diff format](https://en.wikipedia.org/wiki/Diff#Unified_format).   | <a href="https://bazel.build/rules/lib/dict">Dictionary: String -> List of strings</a> | optional |  `{"2.6.4": ["//patches:0001-fix-noline-for-top-directives.patch"]}`  |
 | <a id="flex_repository-repo_mapping"></a>repo_mapping |  In `WORKSPACE` context only: a dictionary from local repository name to global repository name. This allows controls over workspace dependency resolution for dependencies of this repository.<br><br>For example, an entry `"@foo": "@bar"` declares that, for any time this repository depends on `@foo` (such as a dependency on `@foo//some:target`, it should actually resolve that dependency within globally-declared `@bar` (`@bar//some:target`).<br><br>This attribute is _not_ supported in `MODULE.bazel` context (when invoking a repository rule inside a module extension's implementation function).   | <a href="https://bazel.build/rules/lib/dict">Dictionary: String -> String</a> | optional |  |
 | <a id="flex_repository-version"></a>version |  A supported version of Flex.   | String | required |  |
 

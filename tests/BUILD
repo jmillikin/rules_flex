@@ -93,3 +93,20 @@ alias(
     actual = "@rules_flex_testutil//:all_versions",
     tags = ["manual"],
 )
+
+genrule(
+    name = "genrule_noline_top_c",
+    srcs = ["top_c.l"],
+    outs = ["top_c.c"],
+    cmd = "M4=$(M4) $(FLEX) --noline --outfile=$@ $(location top_c.l)",
+    toolchains = [
+        "//flex:current_flex_toolchain",
+        "@rules_m4//m4:current_m4_toolchain",
+    ],
+)
+
+sh_test(
+    name = "flex_noline_test",
+    srcs = ["flex_noline_test.sh"],
+    data = [":genrule_noline_top_c"],
+)
