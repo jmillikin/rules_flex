@@ -1,7 +1,7 @@
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
-load("//flex:flex.bzl", "flex_cc_library")
+load("//flex:flex.bzl", "flex", "flex_cc_library")
 
 cc_library(
     name = "hello_common",
@@ -67,6 +67,12 @@ cc_binary(
     ],
 )
 
+flex(
+    name = "noline_top_c",
+    src = "top_c.l",
+    flex_options = ["--noline"],
+)
+
 filegroup(
     name = "testdata",
     srcs = [
@@ -74,6 +80,7 @@ filegroup(
         ":genrule_test",
         ":hello_c_bin",
         ":hello_cc_bin",
+        ":noline_top_c",
     ],
 )
 

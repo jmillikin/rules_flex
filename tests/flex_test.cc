@@ -81,3 +81,8 @@ TEST_F(RulesFlex, CompiledParserCxx) {
     const auto hello_cc_bin = ReadFile(TestsDir() + "/hello_cc_bin" EXE);
     ASSERT_TRUE(hello_cc_bin.size() > 0);
 }
+
+TEST_F(RulesFlex, NolineOptionDisablesTop) {
+    const auto parser_src = ReadFile(TestsDir() + "/noline_top_c.c");
+    ASSERT_THAT(parser_src, testing::Not(HasSubstr("#line")));
+}

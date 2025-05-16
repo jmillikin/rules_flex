@@ -135,6 +135,9 @@ def _flex_repository(ctx):
 
     _hardcode_int_max_log10(ctx, version)
 
+    for patch in ctx.attr.patches.get(version, []):
+        ctx.patch(Label(patch), strip = ctx.attr.patch_strip)
+
     ctx.file("WORKSPACE", "workspace(name = {name})\n".format(
         name = repr(ctx.name),
     ))
@@ -176,6 +179,23 @@ flex_repository(
         ),
         "extra_linkopts": attr.string_list(
             doc = "Additional linker options to use when building Flex.",
+        ),
+        "patches": attr.string_list_dict(
+            doc = """
+            A mapping from Flex versions to lists of patch files to apply,
+            relative to the root of the Flex source repository. Each patch
+            should be in standard [unified diff
+            format](https://en.wikipedia.org/wiki/Diff#Unified_format).
+            """,
+            default = {
+                "2.6.4": [
+                    "//flex/patches:0001-fix-noline-for-top-directives.patch",
+                ],
+            },
+        ),
+        "patch_strip": attr.int(
+            doc = "Strip the specified number of leading components from patch file names.",
+            default = 0,
         ),
     },
 )
