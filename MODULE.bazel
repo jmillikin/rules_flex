@@ -10,7 +10,7 @@ bazel_dep(
 )
 bazel_dep(
     name = "rules_m4",
-    version = "0.2.5",
+    version = "0.3",
 )
 
 bazel_dep(
