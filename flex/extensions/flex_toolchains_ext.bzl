@@ -46,7 +46,7 @@ def _flex_toolchains_repo_impl(ctx):
         ctx.file(toolchain_name + "/BUILD.bazel", _BUILD.format(
             flex_tool = repr(str(flex_tool)),
             flex_env = json.decode(flex_env),
-            flex_lexer_h = repr(flex_lexer_h),
+            flex_lexer_h = repr(str(flex_lexer_h)),
         ))
 
 _flex_toolchains_repo = repository_rule(
@@ -54,7 +54,7 @@ _flex_toolchains_repo = repository_rule(
     attrs = {
         "flex_tool": attr.string_keyed_label_dict(),
         "flex_env": attr.string_dict(),
-        "flex_lexer_h": attr.string_dict(),
+        "flex_lexer_h": attr.string_keyed_label_dict(),
     },
 )
 
