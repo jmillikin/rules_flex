@@ -18,37 +18,22 @@
 
 load("//flex:providers.bzl", "FlexToolchainInfo")
 
-_M4_TOOLCHAIN_TYPE = "@rules_m4//m4:toolchain_type"
-
 def _template_vars(toolchain):
     return platform_common.TemplateVariableInfo({
         "FLEX": toolchain.flex_tool.executable.path,
     })
 
 def _flex_toolchain_info(ctx):
-    m4 = ctx.toolchains[_M4_TOOLCHAIN_TYPE].m4_toolchain
     flex_runfiles = ctx.attr.flex_tool[DefaultInfo].default_runfiles.files
-
-    flex_env = dict(m4.m4_env)
-    if "M4" not in flex_env:
-        flex_env["M4"] = "{}.runfiles/{}/{}".format(
-            ctx.executable.flex_tool.path,
-            ctx.executable.flex_tool.owner.workspace_name,
-            m4.m4_tool.executable.short_path,
-        )
-
-    flex_env.update(ctx.attr.flex_env)
-
     toolchain = FlexToolchainInfo(
         all_files = depset(
             direct = [ctx.executable.flex_tool],
-            transitive = [flex_runfiles, m4.all_files],
+            transitive = [flex_runfiles],
         ),
         flex_tool = ctx.attr.flex_tool.files_to_run,
-        flex_env = flex_env,
+        flex_env = ctx.attr.flex_env,
         flex_lexer_h = ctx.file.flex_lexer_h,
     )
-
     return [
         platform_common.ToolchainInfo(flex_toolchain = toolchain),
         _template_vars(toolchain),
@@ -79,5 +64,4 @@ Provides `ToolchainInfo` and `TemplateVariableInfo` for the Flex toolchain.
         platform_common.ToolchainInfo,
         platform_common.TemplateVariableInfo,
     ],
-    toolchains = [_M4_TOOLCHAIN_TYPE],
 )

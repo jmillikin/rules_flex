@@ -62,15 +62,8 @@ cc_library(
 _FLEX_BIN_BUILD = """
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 
-filegroup(
-    name = "flex_runfiles",
-    srcs = [
-        "@rules_m4//m4:current_m4_toolchain",
-    ],
-)
 cc_binary(
     name = "flex",
-    data = [":flex_runfiles"],
     features = ["-default_link_libs"],
     linkopts = {EXTRA_LINKOPTS},
     visibility = ["//visibility:public"],

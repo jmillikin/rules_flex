@@ -24,6 +24,9 @@ load(
 
 _M4_TOOLCHAIN_TYPE = "@rules_m4//m4:toolchain_type"
 
+def _m4_toolchain(ctx):
+    return ctx.toolchains[_M4_TOOLCHAIN_TYPE].m4_toolchain
+
 FLEX_ACTION_TOOLCHAINS = [
     _M4_TOOLCHAIN_TYPE,
     FLEX_TOOLCHAIN_TYPE,
@@ -80,6 +83,7 @@ def flex_action(ctx):
         header file), and `outs` (depset of all generated outputs).
     """
     flex = flex_toolchain(ctx)
+    m4 = _m4_toolchain(ctx)
 
     args = ctx.actions.args()
     outputs = []
@@ -109,6 +113,10 @@ def flex_action(ctx):
     args.add_all(ctx.attr.flex_options)
     args.add_all(ctx.files.src)
 
+    flex_env = dict(flex.flex_env)
+    if "M4" not in flex_env:
+        flex_env["M4"] = m4.m4_tool.executable.path
+
     ctx.actions.run(
         executable = flex.flex_tool,
         arguments = [args],
@@ -116,9 +124,10 @@ def flex_action(ctx):
         outputs = outputs,
         tools = [
             ctx.executable._m4_deny_shell,
+            m4.m4_tool,
         ],
         env = dict(
-            flex.flex_env,
+            flex_env,
             M4_SYSCMD_SHELL = ctx.executable._m4_deny_shell.path,
         ),
         mnemonic = "Flex",
