@@ -12,7 +12,7 @@ API reference: [docs/rules_flex.md](docs/rules_flex.md)
 Add the following to your `MODULE.bazel`:
 
 ```python
-bazel_dep(name = "rules_flex", version = "0.4")
+bazel_dep(name = "rules_flex", version = "0.4.1")
 ```
 
 To specify a version or build with additional C compiler options, use the
