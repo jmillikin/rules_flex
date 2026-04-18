@@ -26,14 +26,28 @@ load(
     "flex_action_attrs",
 )
 
+def _compilation_contexts(deps):
+    contexts = []
+    for dep in deps:
+        if CcInfo not in dep:
+            continue
+        contexts.append(dep[CcInfo].compilation_context)
+    return contexts
+
+def _linking_contexts(deps):
+    contexts = []
+    for dep in deps:
+        if CcInfo not in dep:
+            continue
+        contexts.append(dep[CcInfo].linking_context)
+    return contexts
+
 def _cc_library(ctx, flex_result):
     flex_lexer_h = flex_toolchain(ctx).flex_lexer_h
     cc_toolchain = ctx.attr._cc_toolchain[cc_common.CcToolchainInfo]
 
-    cc_deps = cc_common.merge_cc_infos(cc_infos = [
-        dep[CcInfo]
-        for dep in ctx.attr.deps
-    ])
+    deps_compilation_contexts = _compilation_contexts(ctx.attr.deps)
+    deps_linking_contexts = _linking_contexts(ctx.attr.deps)
 
     cc_public_hdrs = []
     cc_private_hdrs = []
@@ -65,7 +79,9 @@ def _cc_library(ctx, flex_result):
         public_hdrs = cc_public_hdrs,
         private_hdrs = cc_private_hdrs,
         system_includes = cc_system_includes,
-        compilation_contexts = [cc_deps.compilation_context],
+        compilation_contexts = deps_compilation_contexts,
+        defines = ctx.attr.defines,
+        local_defines = ctx.attr.local_defines,
         **compile_kwargs
     )
 
@@ -85,7 +101,7 @@ def _cc_library(ctx, flex_result):
         feature_configuration = cc_feature_configuration,
         cc_toolchain = cc_toolchain,
         compilation_outputs = cc_compilation_outputs,
-        linking_contexts = [cc_deps.linking_context],
+        linking_contexts = deps_linking_contexts,
         disallow_dynamic_library = not allow_dynamic_library,
     )
 
@@ -152,7 +168,12 @@ cc_binary(
 """,
     attrs = flex_action_attrs({
         "deps": attr.label_list(
-            doc = "A list of other C/C++ libraries to depend on.",
+            doc = """
+A list of other C/C++ libraries that the library depends on.
+
+See [`cc_library.deps`](https://bazel.build/reference/be/c-cpp#cc_library.deps)
+for more details.
+""",
             providers = [CcInfo],
         ),
         "include_prefix": attr.string(
@@ -166,6 +187,22 @@ for more details.
             doc = """A prefix to strip from the path of the generated header.
 
 See [`cc_library.strip_include_prefix`](https://bazel.build/reference/be/c-cpp#cc_library.strip_include_prefix)
+for more details.
+""",
+        ),
+        "defines": attr.string_list(
+            doc = """
+List of defines to add to the compile line of this and all dependent targets.
+
+See [`cc_library.defines`](https://bazel.build/reference/be/c-cpp#cc_library.defines)
+for more details.
+""",
+        ),
+        "local_defines": attr.string_list(
+            doc = """
+List of defines to add to the compile line of this target.
+
+See [`cc_library.local_defines`](https://bazel.build/reference/be/c-cpp#cc_library.local_defines)
 for more details.
 """,
         ),
