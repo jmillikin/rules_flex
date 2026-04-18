@@ -73,6 +73,12 @@ flex(
     flex_options = ["--noline"],
 )
 
+flex(
+    name = "override_output_src_ext",
+    src = "hello_c.l",
+    output_src_ext = "cc",
+)
+
 filegroup(
     name = "testdata",
     srcs = [
@@ -81,6 +87,7 @@ filegroup(
         ":hello_c_bin",
         ":hello_cc_bin",
         ":noline_top_c",
+        ":override_output_src_ext",
     ],
 )
 

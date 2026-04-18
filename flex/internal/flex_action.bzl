@@ -59,6 +59,14 @@ Additional options to pass to the `flex` command.
 These will be added to the command args immediately before the source file.
 """,
     ),
+    "output_src_ext": attr.string(
+        doc = """
+Override the file extension used for the generated source file.
+
+By default the extension is auto-detected according to the `language` attribute,
+which is itself auto-detected according to the input file extension.
+""",
+    ),
     "_m4_deny_shell": attr.label(
         executable = True,
         cfg = "exec",
@@ -96,15 +104,19 @@ def flex_action(ctx):
         else:
             language = "c++"
     if language == "c":
-        src_ext = "c"
+        default_src_ext = "c"
 
         # The Flex manual documents that `--header-file` and `--c++` are incompatible.
         header = ctx.actions.declare_file("{}.h".format(ctx.attr.name))
         args.add("--header-file=" + header.path)
         outputs.append(header)
     else:
-        src_ext = "cc"
+        default_src_ext = "cc"
         args.add("--c++")
+
+    src_ext = ctx.attr.output_src_ext
+    if not src_ext:
+        src_ext = default_src_ext
 
     source = ctx.actions.declare_file("{}.{}".format(ctx.attr.name, src_ext))
     args.add("--outfile=" + source.path)

@@ -86,3 +86,9 @@ TEST_F(RulesFlex, NolineOptionDisablesTop) {
     const auto parser_src = ReadFile(TestsDir() + "/noline_top_c.c");
     ASSERT_THAT(parser_src, testing::Not(HasSubstr("#line")));
 }
+
+TEST_F(RulesFlex, OverrideOutputSrcExt) {
+    const auto parser_src = ReadFile(TestsDir() + "/override_output_src_ext.cc");
+    ASSERT_THAT(parser_src, HasSubstr("void yyrestart"));
+    ASSERT_THAT(parser_src, testing::Not(HasSubstr("void yyFlexLexer::yyrestart")));
+}

@@ -11,7 +11,7 @@ Bazel rules for Flex, the Fast Lexical Analyzer.
 <pre>
 load("@rules_flex//flex:flex.bzl", "flex")
 
-flex(<a href="#flex-name">name</a>, <a href="#flex-src">src</a>, <a href="#flex-flex_options">flex_options</a>, <a href="#flex-language">language</a>)
+flex(<a href="#flex-name">name</a>, <a href="#flex-src">src</a>, <a href="#flex-flex_options">flex_options</a>, <a href="#flex-language">language</a>, <a href="#flex-output_src_ext">output_src_ext</a>)
 </pre>
 
 Generate C/C++ source code for a Flex lexical analyzer.
@@ -43,6 +43,7 @@ flex(
 | <a id="flex-src"></a>src |  A Flex source file.<br><br>Unless `language` is set, the source's file extension will determine whether Flex operates in C or C++ mode:<ul> <li>Inputs with file extension `.l` generate outputs `{name}.c` and `{name}.h`. </li><li>Inputs with file extension `.ll`, `.l++`, `.lxx`, or `.lpp` generate output     `{name}.cc`. This is equivalent to invoking Flex as `flex++`.</ul>The C++ output depends on `FlexLexer.h`, which is part of the Flex source distribution and may be obtained from the Flex toolchain.   | <a href="https://bazel.build/concepts/labels">Label</a> | required |</li>  |
 | <a id="flex-flex_options"></a>flex_options |  Additional options to pass to the `flex` command.<br><br>These will be added to the command args immediately before the source file.   | List of strings | optional |  `[]`  |
 | <a id="flex-language"></a>language |  Which language to generate the lexer in.   | String | optional |  `""`  |
+| <a id="flex-output_src_ext"></a>output_src_ext |  Override the file extension used for the generated source file.<br><br>By default the extension is auto-detected according to the `language` attribute, which is itself auto-detected according to the input file extension.   | String | optional |  `""`  |
 
 
 <a id="flex_cc_library"></a>
@@ -52,7 +53,7 @@ flex(
 <pre>
 load("@rules_flex//flex:flex.bzl", "flex_cc_library")
 
-flex_cc_library(<a href="#flex_cc_library-name">name</a>, <a href="#flex_cc_library-deps">deps</a>, <a href="#flex_cc_library-src">src</a>, <a href="#flex_cc_library-flex_options">flex_options</a>, <a href="#flex_cc_library-include_prefix">include_prefix</a>, <a href="#flex_cc_library-language">language</a>, <a href="#flex_cc_library-linkstatic">linkstatic</a>,
+flex_cc_library(<a href="#flex_cc_library-name">name</a>, <a href="#flex_cc_library-deps">deps</a>, <a href="#flex_cc_library-src">src</a>, <a href="#flex_cc_library-flex_options">flex_options</a>, <a href="#flex_cc_library-include_prefix">include_prefix</a>, <a href="#flex_cc_library-language">language</a>, <a href="#flex_cc_library-linkstatic">linkstatic</a>, <a href="#flex_cc_library-output_src_ext">output_src_ext</a>,
                 <a href="#flex_cc_library-strip_include_prefix">strip_include_prefix</a>)
 </pre>
 
@@ -87,6 +88,7 @@ cc_binary(
 | <a id="flex_cc_library-include_prefix"></a>include_prefix |  A prefix to add to the path of the generated header.<br><br>See [`cc_library.include_prefix`](https://bazel.build/reference/be/c-cpp#cc_library.include_prefix) for more details.   | String | optional |  `""`  |
 | <a id="flex_cc_library-language"></a>language |  Which language to generate the lexer in.   | String | optional |  `""`  |
 | <a id="flex_cc_library-linkstatic"></a>linkstatic |  Disable creation of a shared library output.<br><br>See [`cc_library.linkstatic`](https://bazel.build/reference/be/c-cpp#cc_library.linkstatic) for more details.   | Boolean | optional |  `False`  |
+| <a id="flex_cc_library-output_src_ext"></a>output_src_ext |  Override the file extension used for the generated source file.<br><br>By default the extension is auto-detected according to the `language` attribute, which is itself auto-detected according to the input file extension.   | String | optional |  `""`  |
 | <a id="flex_cc_library-strip_include_prefix"></a>strip_include_prefix |  A prefix to strip from the path of the generated header.<br><br>See [`cc_library.strip_include_prefix`](https://bazel.build/reference/be/c-cpp#cc_library.strip_include_prefix) for more details.   | String | optional |  `""`  |
 
 
