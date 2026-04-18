@@ -19,12 +19,21 @@ stardoc(
     deps = ["//flex:bzl_srcs"],
 )
 
+stardoc(
+    name = "flex_toolchains_ext_md",
+    out = "flex_toolchains_ext.md",
+    header_template = ":empty.vm",
+    input = "//flex/extensions:flex_toolchains_ext_bzl",
+    deps = ["//flex:bzl_srcs"],
+)
+
 # https://github.com/bazelbuild/stardoc/issues/78
 genrule(
     name = "rules_flex_md",
     srcs = [
         ":flex_md",
         ":flex_repository_ext_md",
+        ":flex_toolchains_ext_md",
     ],
     outs = ["rules_flex.md"],
     cmd = """

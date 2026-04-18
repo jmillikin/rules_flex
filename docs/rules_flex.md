@@ -318,3 +318,52 @@ register_toolchains("@flex//:toolchain")
 | <a id="flex_repository_ext.repository-version"></a>version |  A supported version of Flex.   | String | optional |  `"2.6.4"`  |
 
 
+
+<a id="flex_toolchains_ext"></a>
+
+## flex_toolchains_ext
+
+<pre>
+flex_toolchains_ext = use_extension("@rules_flex//flex/extensions:flex_toolchains_ext.bzl", "flex_toolchains_ext")
+flex_toolchains_ext.toolchain(<a href="#flex_toolchains_ext.toolchain-name">name</a>, <a href="#flex_toolchains_ext.toolchain-flex_env">flex_env</a>, <a href="#flex_toolchains_ext.toolchain-flex_lexer_h">flex_lexer_h</a>, <a href="#flex_toolchains_ext.toolchain-flex_tool">flex_tool</a>)
+</pre>
+
+Module extension for declaring Flex toolchains with custom target binaries.
+
+The resulting repository will have one subdirectory per named module tag, which
+contains a `:toolchain` target that can be registered with Bazel.
+
+### Example
+
+```starlark
+flex_toolchains = use_extension(
+    "@rules_flex//flex/extensions:flex_toolchains_ext.bzl",
+    "flex_toolchain_ext",
+)
+
+flex_toolchains.toolchain(
+    name = "custom",
+    flex_tool = "//custom_flex:flex",
+    flex_lexer_h = "//custom_flex:flex_lexer_h",
+)
+use_repo(flex_toolchains, "flex_toolchains")
+register_toolchains("@flex_toolchains//custom:toolchain")
+```
+
+
+**TAG CLASSES**
+
+<a id="flex_toolchains_ext.toolchain"></a>
+
+### toolchain
+
+**Attributes**
+
+| Name  | Description | Type | Mandatory | Default |
+| :------------- | :------------- | :------------- | :------------- | :------------- |
+| <a id="flex_toolchains_ext.toolchain-name"></a>name |  The name of the toolchain repository to create.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
+| <a id="flex_toolchains_ext.toolchain-flex_env"></a>flex_env |  Additional environment variables to set when running `flex_tool`.   | <a href="https://bazel.build/rules/lib/dict">Dictionary: String -> String</a> | optional |  `{}`  |
+| <a id="flex_toolchains_ext.toolchain-flex_lexer_h"></a>flex_lexer_h |  Label of `FlexLexer.h`, used for generated C++ lexers.   | <a href="https://bazel.build/concepts/labels">Label</a> | required |  |
+| <a id="flex_toolchains_ext.toolchain-flex_tool"></a>flex_tool |  The label of an `flex` executable target.   | <a href="https://bazel.build/concepts/labels">Label</a> | required |  |
+
+
