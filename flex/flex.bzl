@@ -43,6 +43,10 @@ load(
     _flex_repository = "flex_repository",
 )
 load(
+    "//flex/rules:flex_toolchain_info.bzl",
+    _flex_toolchain_info = "flex_toolchain_info",
+)
+load(
     "//flex/rules:flex_toolchain_repository.bzl",
     _flex_toolchain_repository = "flex_toolchain_repository",
 )
@@ -52,6 +56,7 @@ flex = _flex
 flex_cc_library = _flex_cc_library
 flex_toolchain = _flex_toolchain
 flex_repository = _flex_repository
+flex_toolchain_info = _flex_toolchain_info
 flex_toolchain_repository = _flex_toolchain_repository
 FlexToolchainInfo = _FlexToolchainInfo
 

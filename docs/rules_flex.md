@@ -90,6 +90,29 @@ cc_binary(
 | <a id="flex_cc_library-strip_include_prefix"></a>strip_include_prefix |  A prefix to strip from the path of the generated header.<br><br>See [`cc_library.strip_include_prefix`](https://bazel.build/reference/be/c-cpp#cc_library.strip_include_prefix) for more details.   | String | optional |  `""`  |
 
 
+<a id="flex_toolchain_info"></a>
+
+## flex_toolchain_info
+
+<pre>
+load("@rules_flex//flex:flex.bzl", "flex_toolchain_info")
+
+flex_toolchain_info(<a href="#flex_toolchain_info-name">name</a>, <a href="#flex_toolchain_info-flex_env">flex_env</a>, <a href="#flex_toolchain_info-flex_lexer_h">flex_lexer_h</a>, <a href="#flex_toolchain_info-flex_tool">flex_tool</a>)
+</pre>
+
+Provides `ToolchainInfo` and `TemplateVariableInfo` for the Flex toolchain.
+
+**ATTRIBUTES**
+
+
+| Name  | Description | Type | Mandatory | Default |
+| :------------- | :------------- | :------------- | :------------- | :------------- |
+| <a id="flex_toolchain_info-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
+| <a id="flex_toolchain_info-flex_env"></a>flex_env |  Additional environment variables to set when running `flex_tool`.   | <a href="https://bazel.build/rules/lib/dict">Dictionary: String -> String</a> | optional |  `{}`  |
+| <a id="flex_toolchain_info-flex_lexer_h"></a>flex_lexer_h |  Label of `FlexLexer.h`, used for generated C++ lexers.   | <a href="https://bazel.build/concepts/labels">Label</a> | required |  |
+| <a id="flex_toolchain_info-flex_tool"></a>flex_tool |  A `FilesToRunProvider` for the `flex` binary.   | <a href="https://bazel.build/concepts/labels">Label</a> | required |  |
+
+
 <a id="FlexToolchainInfo"></a>
 
 ## FlexToolchainInfo
@@ -168,7 +191,7 @@ A [`FlexToolchainInfo`](#FlexToolchainInfo).
 <pre>
 load("@rules_flex//flex:flex.bzl", "flex_repository")
 
-flex_repository(<a href="#flex_repository-name">name</a>, <a href="#flex_repository-extra_copts">extra_copts</a>, <a href="#flex_repository-extra_linkopts">extra_linkopts</a>, <a href="#flex_repository-repo_mapping">repo_mapping</a>, <a href="#flex_repository-version">version</a>)
+flex_repository(<a href="#flex_repository-name">name</a>, <a href="#flex_repository-extra_copts">extra_copts</a>, <a href="#flex_repository-extra_linkopts">extra_linkopts</a>, <a href="#flex_repository-version">version</a>)
 </pre>
 
 Repository rule for Flex.
@@ -194,7 +217,6 @@ flex_repository(
 | <a id="flex_repository-name"></a>name |  A unique name for this repository.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
 | <a id="flex_repository-extra_copts"></a>extra_copts |  Additional C compiler options to use when building Flex.   | List of strings | optional |  `[]`  |
 | <a id="flex_repository-extra_linkopts"></a>extra_linkopts |  Additional linker options to use when building Flex.   | List of strings | optional |  `[]`  |
-| <a id="flex_repository-repo_mapping"></a>repo_mapping |  In `WORKSPACE` context only: a dictionary from local repository name to global repository name. This allows controls over workspace dependency resolution for dependencies of this repository.<br><br>For example, an entry `"@foo": "@bar"` declares that, for any time this repository depends on `@foo` (such as a dependency on `@foo//some:target`, it should actually resolve that dependency within globally-declared `@bar` (`@bar//some:target`).<br><br>This attribute is _not_ supported in `MODULE.bazel` context (when invoking a repository rule inside a module extension's implementation function).   | <a href="https://bazel.build/rules/lib/dict">Dictionary: String -> String</a> | optional |  |
 | <a id="flex_repository-version"></a>version |  A supported version of Flex.   | String | required |  |
 
 
@@ -205,7 +227,7 @@ flex_repository(
 <pre>
 load("@rules_flex//flex:flex.bzl", "flex_toolchain_repository")
 
-flex_toolchain_repository(<a href="#flex_toolchain_repository-name">name</a>, <a href="#flex_toolchain_repository-flex_repository">flex_repository</a>, <a href="#flex_toolchain_repository-repo_mapping">repo_mapping</a>)
+flex_toolchain_repository(<a href="#flex_toolchain_repository-name">name</a>, <a href="#flex_toolchain_repository-flex_repository">flex_repository</a>)
 </pre>
 
 Toolchain repository rule for Flex toolchains.
@@ -247,7 +269,6 @@ register_toolchains("@flex//:toolchain")
 | :------------- | :------------- | :------------- | :------------- | :------------- |
 | <a id="flex_toolchain_repository-name"></a>name |  A unique name for this repository.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
 | <a id="flex_toolchain_repository-flex_repository"></a>flex_repository |  The name of a [`flex_repository`](#flex_repository).   | String | required |  |
-| <a id="flex_toolchain_repository-repo_mapping"></a>repo_mapping |  In `WORKSPACE` context only: a dictionary from local repository name to global repository name. This allows controls over workspace dependency resolution for dependencies of this repository.<br><br>For example, an entry `"@foo": "@bar"` declares that, for any time this repository depends on `@foo` (such as a dependency on `@foo//some:target`, it should actually resolve that dependency within globally-declared `@bar` (`@bar//some:target`).<br><br>This attribute is _not_ supported in `MODULE.bazel` context (when invoking a repository rule inside a module extension's implementation function).   | <a href="https://bazel.build/rules/lib/dict">Dictionary: String -> String</a> | optional |  |
 
 
 

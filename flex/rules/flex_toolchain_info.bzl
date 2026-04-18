@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Bazel toolchain for Flex."""
+"""Definition of the `flex_toolchain_info` rule."""
 
 load("//flex:providers.bzl", "FlexToolchainInfo")
 
@@ -56,14 +56,21 @@ def _flex_toolchain_info(ctx):
 
 flex_toolchain_info = rule(
     _flex_toolchain_info,
+    doc = """
+Provides `ToolchainInfo` and `TemplateVariableInfo` for the Flex toolchain.
+""",
     attrs = {
         "flex_tool": attr.label(
+            doc = "A `FilesToRunProvider` for the `flex` binary.",
             mandatory = True,
             executable = True,
             cfg = "exec",
         ),
-        "flex_env": attr.string_dict(),
+        "flex_env": attr.string_dict(
+            doc = "Additional environment variables to set when running `flex_tool`.",
+        ),
         "flex_lexer_h": attr.label(
+            doc = "Label of `FlexLexer.h`, used for generated C++ lexers.",
             mandatory = True,
             allow_single_file = [".h"],
         ),

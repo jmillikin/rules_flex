@@ -79,7 +79,7 @@ cc_binary(
 """
 
 _RULES_FLEX_INTERNAL_BUILD = """
-load("@rules_flex//flex/internal:toolchain_info.bzl", "flex_toolchain_info")
+load("@rules_flex//flex/rules:flex_toolchain_info.bzl", "flex_toolchain_info")
 
 flex_toolchain_info(
     name = "toolchain_info",
